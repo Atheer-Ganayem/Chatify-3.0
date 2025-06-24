@@ -91,7 +91,7 @@ const authOptions: NextAuthOptions = {
       name: "next-auth.session-token",
       options: {
         httpOnly: false,
-        sameSite: "lax",
+        sameSite: "none",
         path: "/",
         secure: process.env.NODE_ENV === "production",
       },

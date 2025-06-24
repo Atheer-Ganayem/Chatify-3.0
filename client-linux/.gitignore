@@ -40,4 +40,4 @@ Thumbs.db
 # Optional: Ignore compiled CSS if using PostCSS or Tailwind JIT
 *.css.d.ts
 
-next.config.ts
+

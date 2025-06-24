@@ -64,6 +64,9 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
         `${process.env.BACKEND_URL}/messages/${conversationId}`,
         {
           credentials: "include",
+          headers: {
+            Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
+          },
         }
       );
       const responseData = await response.json();

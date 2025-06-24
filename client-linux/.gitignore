@@ -1,0 +1,43 @@
+# Node modules
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Production build
+/build
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env files
+.env*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# VSCode settings
+.vscode/
+
+# Optional: Ignore public assets that shouldn’t be versioned (if any)
+# /public/tmp/
+
+# Editor config backups
+*.swp
+*.swo
+.idea/
+
+# Optional: Ignore compiled CSS if using PostCSS or Tailwind JIT
+*.css.d.ts
+
+next.config.ts

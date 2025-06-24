@@ -22,6 +22,7 @@ func register(ctx *gin.Context) {
 
 	exists, err := models.UserExists(bson.M{"email": user.Email})
 	if err != nil {
+		log.Println(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error, please try again later."})
 		return
 	}

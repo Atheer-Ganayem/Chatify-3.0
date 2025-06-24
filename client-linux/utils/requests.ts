@@ -1,5 +1,7 @@
 "use client";
 
+import { getCookie } from "cookies-next";
+
 interface createConversationReturnValue {
   ok: boolean;
   message: string;
@@ -13,6 +15,7 @@ export async function createConversation(
     method: "POST",
     headers: {
       "Content-Type": "aplication/json",
+      Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
     },
     credentials: "include",
     body: JSON.stringify({

@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { getCookie } from "cookies-next";
 
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -37,7 +38,10 @@ const ChangeNameSection = () => {
     try {
       const response = await fetch(`${process.env.BACKEND_URL}/user/name`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
+        },
         body: JSON.stringify({ name: values.name }),
         credentials: "include",
       });

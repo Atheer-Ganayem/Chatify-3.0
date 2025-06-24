@@ -13,6 +13,7 @@ import { useSession } from "next-auth/react";
 import { v4 as uuid } from "uuid";
 import { useNotification } from "./NotificationContext";
 import { useRouter } from "next/navigation";
+import { getCookie } from "cookies-next";
 
 type MessagesContextType = {
   messages: Message[];
@@ -107,7 +108,9 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    const ws = new WebSocket(`${process.env.WS_URL}/ws`);
+    const ws = new WebSocket(
+      `${process.env.WS_URL}/ws?token=${getCookie("next-auth.session-token")}`
+    );
     socketRef.current = ws;
 
     ws.onopen = () => {

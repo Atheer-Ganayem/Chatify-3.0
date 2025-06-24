@@ -1,7 +1,10 @@
 package main
 
 import (
+	_ "crypto/tls"
 	"fmt"
+	"log"
+	_ "net/http/httptest"
 	"os"
 
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/db"
@@ -15,7 +18,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	utils.InitAWS()
@@ -36,7 +39,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "192.168.1.16:8080"
+		port = "localhost:8080"
 	} else {
 		port = fmt.Sprintf(":%s", port)
 	}

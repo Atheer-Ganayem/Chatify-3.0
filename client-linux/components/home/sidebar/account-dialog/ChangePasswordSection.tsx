@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { getCookie } from "cookies-next";
 
 const formSchema = z
   .object({
@@ -43,7 +44,10 @@ const ChangePasswordSection = () => {
     try {
       const response = await fetch(`${process.env.BACKEND_URL}/user/password`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
+        },
         body: JSON.stringify({
           currentPassword: values.currentPassword,
           newPassword: values.newPassword,

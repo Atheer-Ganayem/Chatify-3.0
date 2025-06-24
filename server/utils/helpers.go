@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"image"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -35,6 +36,7 @@ func ExtractFileAndUpload(req *http.Request, fieldName string) (string, int, err
 
 	filePath, err := UploadFileToS3(imgBytes, fileHeader)
 	if err != nil {
+		log.Println(err)
 		return "", http.StatusInternalServerError, errors.New("Failed to upload the image.")
 	}
 

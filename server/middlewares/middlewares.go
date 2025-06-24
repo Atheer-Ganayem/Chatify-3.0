@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
@@ -10,13 +11,27 @@ import (
 )
 
 func IsAuth(ctx *gin.Context) {
-	authCookie, err := ctx.Cookie("next-auth.session-token")
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "No auth cookie."})
+	found := true
+	var token string
+	if ctx.Request.Header.Get("Upgrade") == "websocket" {
+		token = ctx.Query("token")
+		if token == "" {
+			found = false
+		}
+	} else {
+		authHeader := strings.Split(ctx.GetHeader("Authorization"), " ")
+		if len(authHeader) != 2 || authHeader[0] != "Bearer" {
+			found = false
+		}
+		token = authHeader[1]
+	}
+
+	if !found {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid auth header."})
 		return
 	}
 
-	userHexID, err := utils.VerifyToken(authCookie)
+	userHexID, err := utils.VerifyToken(token)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Authentication is required."})
 		return

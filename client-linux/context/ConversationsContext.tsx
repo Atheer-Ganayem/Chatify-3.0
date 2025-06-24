@@ -1,5 +1,6 @@
-'use client'
+"use client";
 
+import { getCookie } from "cookies-next";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -32,6 +33,9 @@ const ConversationsProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(true);
       const response = await fetch(`${process.env.BACKEND_URL}/conversations`, {
         credentials: "include",
+        headers: {
+          Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
+        },
       });
       const responseData = await response.json();
       if (response.ok) {

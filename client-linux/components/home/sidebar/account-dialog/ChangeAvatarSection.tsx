@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import AvatarInput from "@/components/auth/AvatarInput";
+import { getCookie } from "cookies-next";
 
 const formSchema = z.object({
   avatar: z.any().refine((val) => {
@@ -38,6 +39,9 @@ const ChangeAvatarSection = () => {
         method: "PUT",
         body: formData,
         credentials: "include",
+        headers: {
+          Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
+        },
       });
       const responseData = await response.json();
       if (response.ok) {

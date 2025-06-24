@@ -1,9 +1,9 @@
 import AuthCard from "@/components/auth/AuthCard";
 import { getServerSession } from "next-auth";
 import React from "react";
-import { authOptions } from "../api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import Header from "@/components/auth/Header";
+import authOptions from "@/utils/authOptions";
 
 export const metadata = {
   title: "Chatify | Auth",

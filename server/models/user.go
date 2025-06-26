@@ -31,6 +31,7 @@ func (user *User) Save() error {
 		return err
 	}
 
+	user.ID = bson.NewObjectID()
 	user.Password = hashedPw
 	user.CreatedAt = time.Now()
 

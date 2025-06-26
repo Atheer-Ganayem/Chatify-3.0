@@ -39,6 +39,7 @@ func getMessages(ctx *gin.Context) {
 
 	messages, err := conversation.GetMessages(page)
 	if err != nil {
+		log.Println(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Couldn't fetch messages."})
 		return
 	}

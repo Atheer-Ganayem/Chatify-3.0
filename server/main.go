@@ -6,13 +6,16 @@ import (
 	"log"
 	_ "net/http/httptest"
 	"os"
+	"time"
 
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/db"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/middlewares"
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/routes"
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"golang.org/x/time/rate"
 )
 
 func main() {
@@ -26,9 +29,10 @@ func main() {
 	defer db.Disconnect()
 
 	server := gin.Default()
+	limiter := middlewares.NewClient(rate.Every(700*time.Millisecond), 5)
+	server.Use(middlewares.RateLimitMiddleware(limiter))
 
 	server.Use(cors.New(cors.Config{
-		// AllowAllOrigins: true,
 		AllowOrigins:     []string{os.Getenv("FRONTEND_URL")},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Authorization", "Content-Type", "Accept", "Origin"},

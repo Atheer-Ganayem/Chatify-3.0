@@ -180,6 +180,7 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
         id: uuid(),
         conversationId: conversationId as string,
         message,
+        type: "msg",
       };
       socketRef.current.send(JSON.stringify(payload));
       appendWaitingMessage(payload);

@@ -27,6 +27,7 @@ type WaitingMessage = {
 };
 
 type WSRequest = {
+  type: "msg";
   id: string;
   message: string;
   conversationId: string;

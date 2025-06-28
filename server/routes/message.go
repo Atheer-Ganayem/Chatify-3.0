@@ -86,7 +86,7 @@ func deleteMessage(ctx *gin.Context) {
 	go conversation.UpdateLastMessage(bson.NilObjectID)
 
 	otherUserID := utils.GetOtherParticipant(userID, conversation.Participants)
-	if conn := ConnectedUsers.getConn(otherUserID); conn != nil {
+	if conn := webSocketManager.GetConn(otherUserID); conn != nil {
 		if err = conn.WriteJSON(gin.H{"type": "delete", "messageId": messageID}); err != nil {
 			log.Println("Coudn't send delete update via ws to other user.")
 		}

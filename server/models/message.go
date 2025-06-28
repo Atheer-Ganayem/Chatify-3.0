@@ -2,10 +2,13 @@ package models
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/db"
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -84,4 +87,22 @@ func (message *Message) Delete() error {
 	_, err := db.Messages.DeleteOne(ctx, bson.M{"_id": message.ID})
 
 	return err
+}
+
+func (payload *WSPayload) Validate() (bson.ObjectID, error) {
+	payload.Message = strings.TrimSpace(payload.Message)
+	if _, err := uuid.Parse(payload.ID); err != nil {
+		return bson.NilObjectID, errors.New("Invalid request ID. Must be a valid UUID.")
+	} else if payload.Type != "msg" {
+		return bson.NilObjectID, errors.New("Invalid type.")
+	} else if payload.Message == "" {
+		return bson.NilObjectID, errors.New("Message cannot be empty.")
+	}
+
+	conversationID, err := bson.ObjectIDFromHex(payload.ConversationID)
+	if err != nil {
+		return bson.NilObjectID, errors.New("Invalid conversation ID.")
+	}
+
+	return conversationID, nil
 }

@@ -2,40 +2,21 @@ package routes
 
 import (
 	"log"
+	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"golang.org/x/time/rate"
 )
-
-type connections map[bson.ObjectID]*websocket.Conn
 
 var (
-	ConnectedUsers = make(connections)
-	connMu         sync.RWMutex
+	webSocketManager = utils.NewWebSocketManager(utils.NewClientLimiter(rate.Every(750*time.Millisecond), 5))
 )
-
-func (c *connections) connectUser(userID bson.ObjectID, conn *websocket.Conn) {
-	connMu.Lock()
-	defer connMu.Unlock()
-	(*c)[userID] = conn
-}
-
-func (c *connections) disconnectUser(id bson.ObjectID) {
-	connMu.Lock()
-	defer connMu.Unlock()
-	delete((*c), id)
-}
-
-func (c *connections) getConn(id bson.ObjectID) *websocket.Conn {
-	connMu.RLock()
-	defer connMu.RUnlock()
-	return (*c)[id]
-}
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -63,8 +44,8 @@ func connectWS(ctx *gin.Context) {
 		return
 	}
 
-	ConnectedUsers.connectUser(userObjectID, conn)
-	defer ConnectedUsers.disconnectUser(userObjectID)
+	webSocketManager.ConnectUser(userObjectID, conn)
+	defer webSocketManager.DisconnectUser(userObjectID)
 
 	// conn.SetReadLimit(1024)
 	conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -78,39 +59,38 @@ func connectWS(ctx *gin.Context) {
 	go ping(ticker, conn, userObjectID)
 
 	for {
+		// check if rate limited
+		host, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+		if err != nil {
+			log.Println("Coudln't split host and port from client addr.")
+			return
+		}
+		if !webSocketManager.Limiter.GetLimiter(host).Allow() {
+			conn.WriteJSON(gin.H{"type": "err", "message": "Too fast."})
+			continue
+		}
+
+		// validate payload
 		var payload models.WSPayload
-		err := conn.ReadJSON(&payload)
+		err = conn.ReadJSON(&payload)
 		if err != nil {
 			log.Printf("Read error from %s: %v", userObjectID.Hex(), err)
 			break
 		}
 
-		if payload.Type == "ping" {
-			if err := conn.WriteJSON(gin.H{"type": "pong"}); err != nil {
-				log.Printf("Failed to send pong to %s: %v", userObjectID.Hex(), err)
-				break
-			}
-			continue
-		}
-
-		if payload.Message == "" || payload.ConversationID == "" || payload.ID == "" {
-			conn.WriteJSON(gin.H{"type": "err", "message": "Message, conversation ID or request ID is missing."})
-			continue
-		}
-
-		conversationID, err := bson.ObjectIDFromHex(payload.ConversationID)
+		conversationID, err := payload.Validate()
 		if err != nil {
-			conn.WriteJSON(gin.H{"type": "err", "message": "Invalid conversation ID."})
-			log.Printf("Invalid conversation ID: %v", err)
+			conn.WriteJSON(gin.H{"type": "err", "message": err.Error()})
 			continue
 		}
+
+		// saving & sending messages to other participant and ACK to client
 		message, receiverID, err := payload.SaveMessage(userObjectID, conversationID)
 		if err != nil {
 			conn.WriteJSON(gin.H{"type": "err", "message": "Couldn't send message."})
-			log.Printf("SaveMessage failed: %v", err)
 			continue
 		}
-		receiverConn := ConnectedUsers.getConn(receiverID)
+		receiverConn := webSocketManager.GetConn(receiverID)
 		if receiverConn != nil {
 			if err := receiverConn.WriteJSON(gin.H{"type": "msg", "message": message}); err != nil {
 				log.Printf("Failed to send to %s: %v", receiverID.Hex(), err)

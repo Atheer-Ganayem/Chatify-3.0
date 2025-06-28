@@ -13,6 +13,7 @@ import { ClipboardCopy, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useMessages } from "@/context/MessagesContext";
+import { getCookie } from "cookies-next";
 
 interface Props {
   message: Message;
@@ -50,6 +51,9 @@ const MessageCard: React.FC<Props> = ({ message }) => {
         `${process.env.BACKEND_URL}/message/${message._id}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
+          },
           credentials: "include",
         }
       );

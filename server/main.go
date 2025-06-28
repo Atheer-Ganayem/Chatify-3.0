@@ -29,7 +29,7 @@ func main() {
 	defer db.Disconnect()
 
 	server := gin.Default()
-	limiter := middlewares.NewClient(rate.Every(700*time.Millisecond), 5)
+	limiter := utils.NewClientLimiter(rate.Every(time.Second), 3)
 	server.Use(middlewares.RateLimitMiddleware(limiter))
 
 	server.Use(cors.New(cors.Config{

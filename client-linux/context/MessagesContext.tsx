@@ -140,6 +140,8 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
 
     ws.onmessage = (e: MessageEvent) => {
       const data = JSON.parse(e.data) as WSResponse;
+      console.log(data);
+
       switch (data.type) {
         case "err":
           toast.error(data.message as string);

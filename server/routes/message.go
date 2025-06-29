@@ -67,6 +67,12 @@ func deleteMessage(ctx *gin.Context) {
 		return
 	}
 
+	conversation, err := models.FindConversation(bson.M{"_id": message.ConversationID, "participants": userID})
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Couldn't delete message, conversation not found."})
+		return
+	}
+
 	err = message.Delete()
 
 	if err == mongo.ErrNoDocuments {
@@ -74,12 +80,6 @@ func deleteMessage(ctx *gin.Context) {
 		return
 	} else if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Coudln't delete message, please try again later."})
-		return
-	}
-
-	conversation, err := models.FindConversation(bson.M{"participants": userID})
-	if err != nil {
-		ctx.JSON(http.StatusOK, gin.H{"message": "Message has been deleted successuflly. But conversation not found."})
 		return
 	}
 
@@ -91,5 +91,6 @@ func deleteMessage(ctx *gin.Context) {
 			log.Println("Coudn't send delete update via ws to other user.")
 		}
 	}
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Message has been deleted successuflly."})
 }

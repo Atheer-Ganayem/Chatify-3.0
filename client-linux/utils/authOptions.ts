@@ -27,8 +27,8 @@ const authOptions: NextAuthOptions = {
               password: credentials.password,
             }),
           });
+          const responseData = await response.json();
           if (response.ok) {
-            const responseData = await response.json();
             return {
               id: responseData.user.id,
               name: responseData.user.name,

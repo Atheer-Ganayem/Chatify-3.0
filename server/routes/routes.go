@@ -33,10 +33,6 @@ func Register(server *gin.Engine) {
 		authRoutes.GET("/ws", connectWS)
 	}
 
-	// {
-	// authRoutes.POST("/message/:conversationID", sendMessage)
-	// }
-
 	authRoutes.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "pong!", "Id": ctx.GetString("userID")})
 	})

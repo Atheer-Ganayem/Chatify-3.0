@@ -1,0 +1,36 @@
+# Root-level ignores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore env files
+**/.env
+!.env.example
+
+# --------------------------------
+# FRONTEND: client-linux (Next.js)
+# --------------------------------
+client-linux/node_modules/
+client-linux/.next/
+client-linux/out/
+client-linux/.env*
+client-linux/.tsbuildinfo
+client-linux/package-lock.json
+client-linux/yarn.lock
+client-linux/npm-debug.log*
+client-linux/pnpm-debug.log*
+
+# --------------------------------
+# BACKEND: server (Golang)
+# --------------------------------
+server/bin/
+server/pkg/
+server/vendor/
+server/*.log
+server/*.tmp
+server/*.test
+server/*.out
+server/go.sum

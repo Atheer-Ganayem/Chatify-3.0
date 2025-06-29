@@ -6,13 +6,13 @@ import Header from "@/components/home/conversation/Header";
 import Chat from "@/components/home/conversation/Chat";
 import authOptions from "@/utils/authOptions";
 
-
 export const metadata = {
   title: "Chatify",
 };
 
 export default async function Page() {
   const session = await getServerSession(authOptions);
+
   if (!session) {
     redirect("/auth?mode=login");
   }

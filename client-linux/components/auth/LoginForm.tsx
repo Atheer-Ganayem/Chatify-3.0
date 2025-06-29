@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -26,6 +27,7 @@ const formSchema = z.object({
 
 export default function LoginForm() {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -38,12 +40,18 @@ export default function LoginForm() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
-      await signIn("credentials", {
+      const res = await signIn("credentials", {
         callbackUrl: "/",
-        redirect: true,
+        redirect: false,
         email: values.email,
         password: values.password,
       });
+      if (!res?.ok) {
+        form.setError("email", { message: "Invalid email or password." });
+        form.setError("password", { message: "Invalid email or password." });
+      } else {
+        router.push("/");
+      }
     } catch (err) {
       console.log(err);
       toast.error("Coudln't sign you in, please try again later.");

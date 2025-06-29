@@ -26,8 +26,7 @@ var upgrader = websocket.Upgrader{
 
 const (
 	pongWait   = 60 * time.Second
-	pingPeriod = (pongWait * 9) / 10 // 54 seconds
-	writeWait  = 10 * time.Second
+	pingPeriod = 50 * time.Second
 )
 
 func connectWS(ctx *gin.Context) {
@@ -38,14 +37,14 @@ func connectWS(ctx *gin.Context) {
 	}
 	defer conn.Close()
 
-	userObjectID, err := bson.ObjectIDFromHex(ctx.GetString("userID"))
+	userID, err := bson.ObjectIDFromHex(ctx.GetString("userID"))
 	if err != nil {
 		log.Printf("Invalid userID: %v", err)
 		return
 	}
 
-	webSocketManager.ConnectUser(userObjectID, conn)
-	defer webSocketManager.DisconnectUser(userObjectID)
+	sc := webSocketManager.ConnectUser(userID, conn)
+	defer webSocketManager.DisconnectUser(userID)
 
 	// conn.SetReadLimit(1024)
 	conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -56,7 +55,7 @@ func connectWS(ctx *gin.Context) {
 
 	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
-	go ping(ticker, conn, userObjectID)
+	go ping(ticker, sc, userID)
 
 	for {
 		// check if rate limited
@@ -66,28 +65,29 @@ func connectWS(ctx *gin.Context) {
 			return
 		}
 		if !webSocketManager.Limiter.GetLimiter(host).Allow() {
-			conn.WriteJSON(gin.H{"type": "err", "message": "Too fast."})
+			sc.WriteJSON(gin.H{"type": "err", "message": "Too fast."})
 			continue
 		}
+		conn.SetReadDeadline(time.Now().Add(pongWait))
 
 		// validate payload
 		var payload models.WSPayload
 		err = conn.ReadJSON(&payload)
 		if err != nil {
-			log.Printf("Read error from %s: %v", userObjectID.Hex(), err)
+			log.Printf("Read error from %s: %v", userID.Hex(), err)
 			break
 		}
 
 		conversationID, err := payload.Validate()
 		if err != nil {
-			conn.WriteJSON(gin.H{"type": "err", "message": err.Error()})
+			sc.WriteJSON(gin.H{"type": "err", "message": err.Error()})
 			continue
 		}
 
 		// saving & sending messages to other participant and ACK to client
-		message, receiverID, err := payload.SaveMessage(userObjectID, conversationID)
+		message, receiverID, err := payload.SaveMessage(userID, conversationID)
 		if err != nil {
-			conn.WriteJSON(gin.H{"type": "err", "message": "Couldn't send message."})
+			sc.WriteJSON(gin.H{"type": "err", "message": "Couldn't send message."})
 			continue
 		}
 		receiverConn := webSocketManager.GetConn(receiverID)
@@ -96,18 +96,18 @@ func connectWS(ctx *gin.Context) {
 				log.Printf("Failed to send to %s: %v", receiverID.Hex(), err)
 			}
 		}
-		if err := conn.WriteJSON(gin.H{"type": "acknowledged", "message": message, "id": payload.ID}); err != nil {
+		if err := sc.WriteJSON(gin.H{"type": "acknowledged", "message": message, "id": payload.ID}); err != nil {
 			log.Printf("Failed to send to %s: %v", receiverID.Hex(), err)
 		}
 	}
 }
 
-func ping(ticker *time.Ticker, conn *websocket.Conn, userObjectID bson.ObjectID) {
+func ping(ticker *time.Ticker, sc *utils.SafeConn, userID bson.ObjectID) {
 	for range ticker.C {
-		conn.SetWriteDeadline(time.Now().Add(writeWait))
-		if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-			log.Printf("Ping failed to %s: %v", userObjectID.Hex(), err)
-			conn.Close()
+		if err := sc.Ping(); err != nil {
+			log.Printf("Ping failed to %s: %v", userID.Hex(), err)
+			webSocketManager.DisconnectUser(userID)
+			sc.Conn.Close()
 			return
 		}
 	}

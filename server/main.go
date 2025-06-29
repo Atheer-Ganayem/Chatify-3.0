@@ -29,11 +29,11 @@ func main() {
 	defer db.Disconnect()
 
 	server := gin.Default()
-	limiter := utils.NewClientLimiter(rate.Every(time.Second), 3)
+	limiter := utils.NewClientLimiter(rate.Every(750*time.Millisecond), 5)
 	server.Use(middlewares.RateLimitMiddleware(limiter))
 
 	server.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{os.Getenv("FRONTEND_URL")},
+		AllowOrigins:     []string{os.Getenv("FRONTEND_URL"), "http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Authorization", "Content-Type", "Accept", "Origin"},
 		AllowCredentials: true,

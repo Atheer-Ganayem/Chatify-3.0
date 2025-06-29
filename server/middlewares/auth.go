@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
@@ -22,7 +21,7 @@ func IsAuth(ctx *gin.Context) {
 		}
 	} else {
 		authHeader := strings.Split(ctx.GetHeader("Authorization"), " ")
-		log.Println(len(authHeader))
+
 		if len(authHeader) != 2 || authHeader[0] != "Bearer" {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid auth header."})
 			return

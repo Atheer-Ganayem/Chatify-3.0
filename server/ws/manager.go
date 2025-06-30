@@ -1,25 +1,14 @@
 package ws
 
 import (
-	"fmt"
 	"log"
 	"sync"
-	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
-
-const writeWait = 8 * time.Second
-
-type SafeConn struct {
-	Conn            *websocket.Conn
-	ParticipantsIDs []bson.ObjectID
-	mu              sync.RWMutex
-}
 
 type WebSocketManager struct {
 	Conns     map[bson.ObjectID]*SafeConn
@@ -69,36 +58,7 @@ func (wm *WebSocketManager) GetConn(id bson.ObjectID) *SafeConn {
 	return wm.Conns[id]
 }
 
-func (sc *SafeConn) WriteJSON(payload gin.H) error {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-
-	sc.Conn.SetWriteDeadline(time.Now().Add(writeWait))
-	return sc.Conn.WriteJSON(payload)
-}
-
-func (sc *SafeConn) Ping() error {
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-
-	sc.Conn.SetWriteDeadline(time.Now().Add(writeWait))
-	return sc.Conn.WriteMessage(websocket.PingMessage, nil)
-}
-
-func (wm *WebSocketManager) NotifyStatus(IDs []bson.ObjectID, userID bson.ObjectID, status bool) {
-	onlineUsersIDs := wm.FilterOnlineUsers(IDs)
-	for _, id := range onlineUsersIDs {
-		go func(id bson.ObjectID) {
-			conn := wm.GetConn(id)
-			if conn != nil {
-				if err := conn.WriteJSON(gin.H{"type": "status", "userId": userID, "online": status}); err != nil {
-					log.Printf("Coudn't notify user %s of online event: %v", id, err)
-				}
-			}
-		}(id)
-	}
-}
-
+// Takes a slice of MongoDB ObjectIDs and returns only those who have an active WebSocket connection.
 func (wm *WebSocketManager) FilterOnlineUsers(IDs []bson.ObjectID) []bson.ObjectID {
 	wm.ManagerMu.RLock()
 	defer wm.ManagerMu.RUnlock()
@@ -112,26 +72,17 @@ func (wm *WebSocketManager) FilterOnlineUsers(IDs []bson.ObjectID) []bson.Object
 	return online
 }
 
-func (sc *SafeConn) LoadParticipantsIDs(userID bson.ObjectID) error {
-	IDs, err := models.GetParticipantsIDs(userID)
-	if err != nil {
-		return fmt.Errorf("failed to load participants for user %s: %w", userID.Hex(), err)
+// Notifies all online users (from the given slice) about the online/offline status of a specific user.
+func (wm *WebSocketManager) NotifyStatus(IDs []bson.ObjectID, userID bson.ObjectID, status bool) {
+	onlineUsersIDs := wm.FilterOnlineUsers(IDs)
+	for _, id := range onlineUsersIDs {
+		go func(id bson.ObjectID) {
+			conn := wm.GetConn(id)
+			if conn != nil {
+				if err := conn.WriteJSON(gin.H{"type": "status", "userId": userID, "online": status}); err != nil {
+					log.Printf("Coudn't notify user %s of online event: %v", id, err)
+				}
+			}
+		}(id)
 	}
-
-	sc.mu.Lock()
-	defer sc.mu.Unlock()
-
-	sc.ParticipantsIDs = IDs
-
-	return nil
-}
-
-func (sc *SafeConn) ParticipantsIDsCopy() []bson.ObjectID {
-	sc.mu.RLock()
-	defer sc.mu.RUnlock()
-
-	idsCopy := make([]bson.ObjectID, len(sc.ParticipantsIDs))
-	copy(idsCopy, sc.ParticipantsIDs)
-
-	return idsCopy
 }

@@ -78,10 +78,11 @@ type PopulatedConversation struct {
 }
 
 type UserPreview struct {
-	ID     bson.ObjectID `json:"_id" bson:"_id"`
-	Name   string        `json:"name"`
-	Email  string        `json:"email"`
-	Avatar string        `json:"avatar"`
+	ID       bson.ObjectID `json:"_id" bson:"_id"`
+	Name     string        `json:"name"`
+	Email    string        `json:"email"`
+	Avatar   string        `json:"avatar"`
+	IsOnline bool          `json:"isOnline"`
 }
 
 func GetMyPopulateConversations(userID bson.ObjectID) ([]PopulatedConversation, error) {
@@ -187,4 +188,64 @@ func (conversation *Conversation) UpdateLastMessage(messageID bson.ObjectID) {
 	if err != nil {
 		log.Printf("error updating last message. conversation id: %s\n", conversation.ID)
 	}
+}
+
+func GetParticipantsIDs(userID bson.ObjectID) ([]bson.ObjectID, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	pipeline := []bson.M{
+		// Match conversations where userID is in participants array
+		{
+			"$match": bson.M{
+				"participants": userID,
+			},
+		},
+		// Unwind the participants array
+		{
+			"$unwind": "$participants",
+		},
+		// Filter out the current user
+		{
+			"$match": bson.M{
+				"participants": bson.M{
+					"$ne": userID,
+				},
+			},
+		},
+		// Group to get unique participants
+		{
+			"$group": bson.M{
+				"_id": "$participants",
+			},
+		},
+		// Project to rename _id to participant
+		{
+			"$project": bson.M{
+				"_id":         0,
+				"participant": "$_id",
+			},
+		},
+	}
+
+	cursor, err := db.Conversations.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var docs []struct {
+		Participant bson.ObjectID `bson:"participant"`
+	}
+
+	if err := cursor.All(ctx, &docs); err != nil {
+		return nil, err
+	}
+
+	var result = make([]bson.ObjectID, len(docs))
+	for i, doc := range docs {
+		result[i] = doc.Participant
+	}
+
+	return result, nil
 }

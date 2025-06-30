@@ -8,6 +8,7 @@ import (
 
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/ws"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -15,7 +16,7 @@ import (
 )
 
 var (
-	webSocketManager = utils.NewWebSocketManager(utils.NewClientLimiter(rate.Every(750*time.Millisecond), 5))
+	webSocketManager = ws.NewWebSocketManager(utils.NewClientLimiter(rate.Every(750*time.Millisecond), 5))
 )
 
 var upgrader = websocket.Upgrader{
@@ -56,6 +57,15 @@ func connectWS(ctx *gin.Context) {
 	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
 	go ping(ticker, sc, userID)
+
+	// notifing online and cashing user's "friends"
+	err = sc.LoadParticipantsIDs(userID)
+	if err != nil {
+		log.Println(err.Error())
+		sc.WriteJSON(gin.H{"type": "err", "message": "Couldn't load your conversations status. Try again later."})
+		return
+	}
+	go webSocketManager.NotifyStatus(sc.ParticipantsIDsCopy(), userID, true)
 
 	for {
 		// check if rate limited
@@ -102,7 +112,7 @@ func connectWS(ctx *gin.Context) {
 	}
 }
 
-func ping(ticker *time.Ticker, sc *utils.SafeConn, userID bson.ObjectID) {
+func ping(ticker *time.Ticker, sc *ws.SafeConn, userID bson.ObjectID) {
 	for range ticker.C {
 		if err := sc.Ping(); err != nil {
 			log.Printf("Ping failed to %s: %v", userID.Hex(), err)
@@ -110,5 +120,19 @@ func ping(ticker *time.Ticker, sc *utils.SafeConn, userID bson.ObjectID) {
 			sc.Conn.Close()
 			return
 		}
+	}
+}
+
+func notifyStatus(IDs []bson.ObjectID, userID bson.ObjectID, online bool) {
+	onlineUsersIDs := webSocketManager.FilterOnlineUsers(IDs)
+	for _, id := range onlineUsersIDs {
+		go func(id bson.ObjectID) {
+			conn := webSocketManager.GetConn(id)
+			if conn != nil {
+				if err := conn.WriteJSON(gin.H{"online": userID}); err != nil {
+					log.Printf("Coudn't notify user %s of online event: %v", id, err)
+				}
+			}
+		}(id)
 	}
 }

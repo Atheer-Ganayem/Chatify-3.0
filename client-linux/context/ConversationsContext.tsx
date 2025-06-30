@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useOnlineUsers } from "./OnlineUsersContext";
 
 type ConversationContextType = {
   conversations: Conversation[];
@@ -24,6 +25,7 @@ const ConversationsProvider = ({ children }: { children: React.ReactNode }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const params = useSearchParams();
+  const onlineCtx = useOnlineUsers();
   const conversationID = params.get("conversationID");
   const currentConversation =
     conversations.find((cnv) => cnv._id === conversationID) || null;
@@ -40,6 +42,7 @@ const ConversationsProvider = ({ children }: { children: React.ReactNode }) => {
       const responseData = await response.json();
       if (response.ok) {
         setConversations(responseData.conversations || []);
+        onlineCtx.addOnline(...(responseData.online || []));
       } else {
         toast.error(responseData.message);
       }

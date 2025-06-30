@@ -8,24 +8,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
 import { getDate } from "@/utils/date-formatting";
 import { useSession } from "next-auth/react";
 import ConversationListLoader from "@/components/loaders/ConversationListLoader";
+import { useOnlineUsers } from "@/context/OnlineUsersContext";
 
 interface Props {
   filter: string;
 }
 
 const ConversationsList: React.FC<Props> = ({ filter }) => {
-  const ctx = useConversations();
+  const conversationCtx = useConversations();
+  const onlineCtx = useOnlineUsers();
   const session = useSession();
 
-  if (!ctx || ctx.loading) {
+  if (!conversationCtx || conversationCtx.loading) {
     return <ConversationListLoader />;
   }
 
   let conversations = filter
-    ? ctx!.conversations!.filter((cnv) =>
+    ? conversationCtx!.conversations!.filter((cnv) =>
         cnv.participant.name.toLowerCase().includes(filter)
       )
-    : ctx!.conversations!;
+    : conversationCtx!.conversations!;
 
   conversations = conversations.sort((a, b) => {
     if (!a.lastMessage && b.lastMessage) return 1;
@@ -39,25 +41,34 @@ const ConversationsList: React.FC<Props> = ({ filter }) => {
     <SidebarMenuButton
       key={cnv._id}
       asChild
-      isActive={ctx.currentConversation?._id === cnv._id}
+      isActive={conversationCtx.currentConversation?._id === cnv._id}
       className="h-auto"
     >
       <Link
         href={{ pathname: "/", query: { conversationID: cnv._id } }}
         className="flex gap-4"
       >
-        <Avatar className="h-14 w-14 rounded-full">
-          <AvatarImage
-            src={`${process.env.AWS}${cnv.participant.avatar}`}
-            alt={cnv.participant.name}
+        <div className="relative">
+          <Avatar className="h-14 w-14 rounded-full">
+            <AvatarImage
+              src={`${process.env.AWS}${cnv.participant.avatar}`}
+              alt={cnv.participant.name}
+            />
+            <AvatarFallback className="rounded-lg">
+              {cnv.participant.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
+            </AvatarFallback>
+          </Avatar>
+          <span
+            className={`absolute h-4 w-4 top-0 right-0 rounded-full ${
+              onlineCtx.isOnline(cnv.participant._id)
+                ? "bg-green-500"
+                : "bg-red-500"
+            }`}
           />
-          <AvatarFallback className="rounded-lg">
-            {cnv.participant.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}
-          </AvatarFallback>
-        </Avatar>
+        </div>
         <div className="w-full">
           <h4 className="font-bold text-xl">{cnv.participant.name}</h4>
           {cnv.lastMessage && (

@@ -36,6 +36,8 @@ type WSRequest = {
 type WSResponse = {
   id: string;
   message: Message | string;
-  type: "err" | "msg" | "acknowledged" | "delete";
+  type: "err" | "msg" | "acknowledged" | "delete" | "status";
   messageId?: string;
+  userId?: string;
+  online?: boolean;
 };

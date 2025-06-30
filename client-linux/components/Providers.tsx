@@ -6,6 +6,7 @@ import { SessionProvider } from "next-auth/react";
 import ConversationsProvider from "@/context/ConversationsContext";
 import MessagesProvider from "@/context/MessagesContext";
 import NotificationProvider from "@/context/NotificationContext";
+import OnlineUsersProvider from "@/context/OnlineUsersContext";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -17,9 +18,11 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     >
       <SessionProvider>
         <NotificationProvider>
-          <ConversationsProvider>
-            <MessagesProvider>{children}</MessagesProvider>
-          </ConversationsProvider>
+          <OnlineUsersProvider>
+            <ConversationsProvider>
+              <MessagesProvider>{children}</MessagesProvider>
+            </ConversationsProvider>
+          </OnlineUsersProvider>
         </NotificationProvider>
       </SessionProvider>
     </ThemeProvider>

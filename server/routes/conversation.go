@@ -23,7 +23,14 @@ func getConversations(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Conversation fetched successfully.", "conversations": conversations})
+	IDs := make([]bson.ObjectID, len(conversations))
+	for i, cnv := range conversations {
+		IDs[i] = cnv.Participant.ID
+	}
+	online := webSocketManager.FilterOnlineUsers(IDs)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Conversation fetched successfully.",
+		"conversations": conversations, "online": online})
 }
 
 func createConversation(ctx *gin.Context) {

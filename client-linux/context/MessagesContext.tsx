@@ -14,6 +14,7 @@ import { v4 as uuid } from "uuid";
 import { useNotification } from "./NotificationContext";
 import { useRouter } from "next/navigation";
 import { getCookie } from "cookies-next";
+import { useOnlineUsers } from "./OnlineUsersContext";
 
 type MessagesContextType = {
   messages: Message[];
@@ -39,6 +40,7 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const ConversationsCtx = useConversations();
   const notificationsCtx = useNotification();
+  const onlineCtx = useOnlineUsers();
   const conversationId = ConversationsCtx.currentConversation?._id;
   const currentConversationIdRef = useRef<string>(
     ConversationsCtx.currentConversation?._id
@@ -140,8 +142,6 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
 
     ws.onmessage = (e: MessageEvent) => {
       const data = JSON.parse(e.data) as WSResponse;
-      console.log(data);
-
       switch (data.type) {
         case "err":
           toast.error(data.message as string);
@@ -154,6 +154,13 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
           break;
         case "delete":
           onDelete(data.messageId!);
+          break;
+        case "status":
+          if (data.online) {
+            onlineCtx.addOnline(data.userId!);
+          } else {
+            onlineCtx.removeOnline(data.userId!);
+          }
           break;
       }
     };

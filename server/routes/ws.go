@@ -2,11 +2,9 @@ package routes
 
 import (
 	"log"
-	"net"
 	"net/http"
 	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/ws"
 	"github.com/gin-gonic/gin"
@@ -67,49 +65,7 @@ func connectWS(ctx *gin.Context) {
 	}
 	go webSocketManager.NotifyStatus(sc.ParticipantsIDsCopy(), userID, true)
 
-	for {
-		// check if rate limited
-		host, _, err := net.SplitHostPort(conn.RemoteAddr().String())
-		if err != nil {
-			log.Println("Coudln't split host and port from client addr.")
-			return
-		}
-		if !webSocketManager.Limiter.GetLimiter(host).Allow() {
-			sc.WriteJSON(gin.H{"type": "err", "message": "Too fast."})
-			continue
-		}
-		conn.SetReadDeadline(time.Now().Add(pongWait))
-
-		// validate payload
-		var payload models.WSPayload
-		err = conn.ReadJSON(&payload)
-		if err != nil {
-			log.Printf("Read error from %s: %v", userID.Hex(), err)
-			break
-		}
-
-		conversationID, err := payload.Validate()
-		if err != nil {
-			sc.WriteJSON(gin.H{"type": "err", "message": err.Error()})
-			continue
-		}
-
-		// saving & sending messages to other participant and ACK to client
-		message, receiverID, err := payload.SaveMessage(userID, conversationID)
-		if err != nil {
-			sc.WriteJSON(gin.H{"type": "err", "message": "Couldn't send message."})
-			continue
-		}
-		receiverConn := webSocketManager.GetConn(receiverID)
-		if receiverConn != nil {
-			if err := receiverConn.WriteJSON(gin.H{"type": "msg", "message": message}); err != nil {
-				log.Printf("Failed to send to %s: %v", receiverID.Hex(), err)
-			}
-		}
-		if err := sc.WriteJSON(gin.H{"type": "acknowledged", "message": message, "id": payload.ID}); err != nil {
-			log.Printf("Failed to send to %s: %v", receiverID.Hex(), err)
-		}
-	}
+	ws.ReadPump(webSocketManager, sc, userID)
 }
 
 func ping(ticker *time.Ticker, sc *ws.SafeConn, userID bson.ObjectID) {
@@ -120,19 +76,5 @@ func ping(ticker *time.Ticker, sc *ws.SafeConn, userID bson.ObjectID) {
 			sc.Conn.Close()
 			return
 		}
-	}
-}
-
-func notifyStatus(IDs []bson.ObjectID, userID bson.ObjectID, online bool) {
-	onlineUsersIDs := webSocketManager.FilterOnlineUsers(IDs)
-	for _, id := range onlineUsersIDs {
-		go func(id bson.ObjectID) {
-			conn := webSocketManager.GetConn(id)
-			if conn != nil {
-				if err := conn.WriteJSON(gin.H{"online": userID}); err != nil {
-					log.Printf("Coudn't notify user %s of online event: %v", id, err)
-				}
-			}
-		}(id)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -26,7 +25,7 @@ func ReadPump(webSocketManager *WebSocketManager, sc *SafeConn, userID bson.Obje
 		}
 
 		// Read conn & validate payload
-		var payload models.WSPayload
+		var payload WSPayload
 		sc.Conn.SetReadDeadline(time.Now().Add(pongWait))
 		err = sc.Conn.ReadJSON(&payload)
 		if err != nil {
@@ -41,7 +40,7 @@ func ReadPump(webSocketManager *WebSocketManager, sc *SafeConn, userID bson.Obje
 		}
 
 		// saving & sending messages to other participant and ACK to client
-		message, receiverID, err := payload.SaveMessage(userID, conversationID)
+		message, receiverID, err := payload.ProccessMessage(userID, conversationID)
 		if err != nil {
 			sc.WriteJSON(gin.H{"type": "err", "message": "Couldn't send message."})
 			continue

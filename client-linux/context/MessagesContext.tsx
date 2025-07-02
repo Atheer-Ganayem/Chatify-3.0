@@ -126,12 +126,18 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
     ws.onclose = () => {
       if (reconnectRef.current < MAX_RECONNECTS) {
         reconnectRef.current++;
-        console.warn(
-          `⚠️ Reconnect #${reconnectRef.current} in ${RECONNECT_DELAY / 1000}s`
+        toast.warning(
+          `Connection has been lost.\nReconnect #${reconnectRef.current} in ${
+            RECONNECT_DELAY / 1000
+          }s`,
+          { duration: RECONNECT_DELAY }
         );
         setTimeout(connect, RECONNECT_DELAY);
       } else {
-        console.error("❌ Max reconnect attempts reached.");
+        toast.error(
+          "Max reconnect attempts reached. Check your internet connection and reload the page.",
+          { duration: 1000 * 60 }
+        );
       }
     };
 

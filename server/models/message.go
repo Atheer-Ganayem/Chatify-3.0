@@ -2,14 +2,10 @@ package models
 
 import (
 	"context"
-	"errors"
-	"strings"
 	"time"
 
 	"github.com/Atheer-Ganayem/Chatify-3.0-backend/db"
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -24,32 +20,13 @@ type Message struct {
 	CreatedAt      time.Time     `json:"createdAt" bson:"createdAt"`
 }
 
-type WSPayload struct {
-	ID             string `json:"id"`
-	Type           string `json:"type"`
-	ConversationID string `json:"conversationId"`
-	Message        string `json:"message"`
-}
-
-func (payload *WSPayload) SaveMessage(userID, conversationID bson.ObjectID) (Message, bson.ObjectID, error) {
-	conversation, err := FindConversation(bson.M{"_id": conversationID, "participants": userID})
-	if err != nil {
-		return Message{}, bson.NewObjectID(), err
-	}
-
-	message := Message{ID: bson.NewObjectID(), Sender: userID, ConversationID: conversationID, Text: payload.Message, CreatedAt: time.Now()}
-
+func (message Message) Save() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	_, err = db.Messages.InsertOne(ctx, message)
-	if err != nil {
-		return Message{}, bson.NewObjectID(), err
-	}
+	_, err := db.Messages.InsertOne(ctx, message)
 
-	go conversation.UpdateLastMessage(message.ID)
-
-	return message, utils.GetOtherParticipant(userID, [2]bson.ObjectID(conversation.Participants)), nil
+	return err
 }
 
 func (conversation *Conversation) GetMessages(page int64) ([]Message, error) {
@@ -88,22 +65,4 @@ func (message *Message) Delete() error {
 	_, err := db.Messages.DeleteOne(ctx, bson.M{"_id": message.ID})
 
 	return err
-}
-
-func (payload *WSPayload) Validate() (bson.ObjectID, error) {
-	payload.Message = strings.TrimSpace(payload.Message)
-	if _, err := uuid.Parse(payload.ID); err != nil {
-		return bson.NilObjectID, errors.New("Invalid request ID. Must be a valid UUID.")
-	} else if payload.Type != "msg" {
-		return bson.NilObjectID, errors.New("Invalid type.")
-	} else if payload.Message == "" {
-		return bson.NilObjectID, errors.New("Message cannot be empty.")
-	}
-
-	conversationID, err := bson.ObjectIDFromHex(payload.ConversationID)
-	if err != nil {
-		return bson.NilObjectID, errors.New("Invalid conversation ID.")
-	}
-
-	return conversationID, nil
 }

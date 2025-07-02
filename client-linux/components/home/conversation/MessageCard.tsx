@@ -92,7 +92,8 @@ const MessageCard: React.FC<Props> = ({ message }) => {
 
       <Card
         className={`flex-1 shadow-sm my-2 ${
-          message.sender === session.data.user.id && "bg-primary"
+          message.sender === session.data.user.id &&
+          (isDeleting ? "bg-red-800 opacity-60" : "bg-primary")
         }`}
       >
         <CardHeader>

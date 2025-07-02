@@ -55,22 +55,6 @@ func FindConversationByParticipants(users [2]bson.ObjectID) (Conversation, error
 	})
 }
 
-func FindManyConversations(filter bson.M) ([]Conversation, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	var conversations []Conversation
-	cursor, err := db.Conversations.Find(ctx, filter)
-	if err != nil {
-		return conversations, nil
-	}
-	defer cursor.Close(ctx)
-
-	err = cursor.All(ctx, &conversations)
-
-	return conversations, err
-}
-
 type PopulatedConversation struct {
 	ID          bson.ObjectID `json:"_id" bson:"_id"`
 	Participant UserPreview   `json:"participant"`
@@ -85,6 +69,7 @@ type UserPreview struct {
 	IsOnline bool          `json:"isOnline"`
 }
 
+// Takes a user id (MongoDB ObjectID), returns a slice of all the conversations that the user is associated with as a "PopulatedConversation"
 func GetMyPopulateConversations(userID bson.ObjectID) ([]PopulatedConversation, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -161,6 +146,7 @@ func GetMyPopulateConversations(userID bson.ObjectID) ([]PopulatedConversation, 
 	return results, nil
 }
 
+// Takes a message id (MongoDB ObjectID) and sets it as the last message of the conversation. if message id is a nil object id, it tryies to find the last message, if it's not found, it sets nil as the value.
 func (conversation *Conversation) UpdateLastMessage(messageID bson.ObjectID) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -190,6 +176,7 @@ func (conversation *Conversation) UpdateLastMessage(messageID bson.ObjectID) {
 	}
 }
 
+// Takes a user id (MongoDB ObjectID), returns a slice of MongoDB ObjectIDs of those who have a conversation with the given user.
 func GetParticipantsIDs(userID bson.ObjectID) ([]bson.ObjectID, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()

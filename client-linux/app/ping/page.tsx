@@ -10,6 +10,7 @@ const page = () => {
         headers: {
           Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
         },
+        credentials: "include",
       });
       const responseData = await response.json();
       console.log(response, response);

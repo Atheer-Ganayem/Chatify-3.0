@@ -94,6 +94,7 @@ const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        domain: "chatifiy-3.fly.dev",
       },
     },
   },

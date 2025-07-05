@@ -8,6 +8,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func getConversations(ctx *gin.Context) {
@@ -55,12 +56,13 @@ func createConversation(ctx *gin.Context) {
 	}
 
 	// check if tarrget user exists
-	exists, err := models.UserExists(bson.M{"_id": id2})
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong, please try again later."})
-		return
-	} else if !exists {
+	opts := options.FindOne().SetProjection(bson.D{{Key: "_id", Value: 1}, {Key: "name", Value: 1}, {Key: "avatar", Value: 1}})
+	targetUser, err := models.FindUser(bson.M{"_id": id2}, opts)
+	if err == mongo.ErrNoDocuments {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Target user doesnt exist."})
+		return
+	} else if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong, please try again later."})
 		return
 	}
 
@@ -80,6 +82,11 @@ func createConversation(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(code, gin.H{"message": err.Error()})
 		return
+	}
+
+	// Update other user of the new conversation (if connected)
+	if conn := webSocketManager.GetConn(id2); conn != nil {
+		conn.WriteJSON(gin.H{"type": "cnv", "user": targetUser, "cnvId": insertedID})
 	}
 
 	//response

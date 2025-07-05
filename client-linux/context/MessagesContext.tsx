@@ -161,6 +161,12 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
         case "delete":
           onDelete(data.messageId!);
           break;
+        case "cnv":
+          ConversationsCtx.appendConversation({
+            _id: data.cnvId!,
+            participant: data.user!,
+          });
+          break;
         case "status":
           if (data.online) {
             onlineCtx.addOnline(data.userId!);

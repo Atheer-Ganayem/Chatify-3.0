@@ -60,12 +60,12 @@ func UserExists(filter bson.M) (bool, error) {
 	}
 }
 
-func FindUser(filter bson.M) (User, error) {
+func FindUser(filter bson.M, opts *options.FindOneOptionsBuilder) (User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	var user User
-	err := db.Users.FindOne(ctx, filter).Decode(&user)
+	err := db.Users.FindOne(ctx, filter, opts).Decode(&user)
 
 	return user, err
 }

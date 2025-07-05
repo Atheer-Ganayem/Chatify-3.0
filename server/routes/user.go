@@ -56,7 +56,7 @@ func login(ctx *gin.Context) {
 		return
 	}
 
-	user, err := models.FindUser(bson.M{"email": body.Email})
+	user, err := models.FindUser(bson.M{"email": body.Email}, nil)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid email or password."})
 		return
@@ -139,7 +139,7 @@ func changePassword(ctx *gin.Context) {
 		return
 	}
 
-	user, err := models.FindUser(bson.M{"_id": userID})
+	user, err := models.FindUser(bson.M{"_id": userID}, nil)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong, please try agaon later."})
 		return
@@ -180,7 +180,7 @@ func changeAvatar(ctx *gin.Context) {
 		return
 	}
 
-	user, err := models.FindUser(bson.M{"_id": userID})
+	user, err := models.FindUser(bson.M{"_id": userID}, nil)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "User doesn't exist."})
 	}

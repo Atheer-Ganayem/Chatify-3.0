@@ -3,14 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useConversations } from "@/context/ConversationsContext";
-import { useMessages } from "@/context/MessagesContext";
+import { useWebsocket } from "@/context/WebsocketContext";
 import { Send } from "lucide-react";
-import React, {  useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 
 const ChatInput = () => {
   const [input, setInput] = useState<string>("");
   const { currentConversation } = useConversations();
-  const msgCtx = useMessages();
+  const websocketCtx = useWebsocket();
   const btnRef = useRef<HTMLButtonElement>(null);
 
   function onSubmitHandler(e: React.FormEvent) {
@@ -18,7 +18,7 @@ const ChatInput = () => {
     if (input.trim() === "") {
       return;
     }
-    msgCtx.send(input.trim());
+    websocketCtx.sendMessage(input.trim());
     setInput("");
   }
 

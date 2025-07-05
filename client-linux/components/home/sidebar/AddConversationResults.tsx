@@ -7,6 +7,7 @@ import { redirect, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { createConversation } from "@/utils/requests";
 import { toast } from "sonner";
+import { useOnlineUsers } from "@/context/OnlineUsersContext";
 
 interface Props {
   user: Participant;
@@ -18,6 +19,7 @@ const AddConversationResults: React.FC<Props> = ({ user, onClose }) => {
   const { data } = useSession();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const router = useRouter();
+  const onlineCtx = useOnlineUsers();
 
   async function onClickHandler() {
     ctx?.conversations?.forEach((cnv) => {
@@ -38,6 +40,9 @@ const AddConversationResults: React.FC<Props> = ({ user, onClose }) => {
         _id: response.conversationID,
         participant: user,
       });
+      if (response.isOnline) {
+        onlineCtx.addOnline(user._id);
+      }
       onClose();
       router.push(`/?conversationID=${response.conversationID}`);
     } catch (error) {

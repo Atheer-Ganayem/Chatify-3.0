@@ -59,3 +59,10 @@ func (sc *SafeConn) LoadParticipantsIDs(userID bson.ObjectID) error {
 
 	return nil
 }
+
+func (sc *SafeConn) AppendParticipantID(id bson.ObjectID) {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+
+	sc.ParticipantsIDs = append(sc.ParticipantsIDs, id)
+}

@@ -42,4 +42,5 @@ type WSResponse = {
   online?: boolean;
   cnvId?: string;
   user?: Participant;
+  isOnline?: bool;
 };

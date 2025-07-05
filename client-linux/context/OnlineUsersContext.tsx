@@ -15,14 +15,16 @@ const OnlineUsersContext = createContext<OnlineUsersContextType | undefined>(
 
 const OnlineUsersProvider = ({ children }: { children: React.ReactNode }) => {
   const [online, setOnline] = useState<string[]>([]);
+  console.log(online);
 
   function addOnline(...ids: string[]) {
-    "adding to online...";
-    setOnline((prev) => [...prev, ...ids]);
+    setOnline((prev) => {
+      const newIds = ids.filter((id) => !prev.includes(id));
+      return [...prev, ...newIds];
+    });
   }
 
   function removeOnline(id: string) {
-    "removing from online...";
     setOnline((prev) => prev.filter((currentId) => currentId !== id));
   }
 
@@ -36,7 +38,7 @@ const OnlineUsersProvider = ({ children }: { children: React.ReactNode }) => {
         online,
         addOnline,
         removeOnline,
-        isOnline
+        isOnline,
       }}
     >
       {children}

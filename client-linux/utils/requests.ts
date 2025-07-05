@@ -6,6 +6,7 @@ interface createConversationReturnValue {
   ok: boolean;
   message: string;
   conversationID: string;
+  isOnline: boolean;
 }
 
 export async function createConversation(
@@ -28,5 +29,6 @@ export async function createConversation(
     ok: response.ok,
     message: responseData.message,
     conversationID: responseData.conversationID,
+    isOnline: responseData.isOnline,
   };
 }

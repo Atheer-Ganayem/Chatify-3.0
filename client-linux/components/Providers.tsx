@@ -7,6 +7,7 @@ import ConversationsProvider from "@/context/ConversationsContext";
 import MessagesProvider from "@/context/MessagesContext";
 import NotificationProvider from "@/context/NotificationContext";
 import OnlineUsersProvider from "@/context/OnlineUsersContext";
+import WebsocketProvider from "@/context/WebsocketContext";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -20,7 +21,9 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
         <NotificationProvider>
           <OnlineUsersProvider>
             <ConversationsProvider>
-              <MessagesProvider>{children}</MessagesProvider>
+              <MessagesProvider>
+                <WebsocketProvider>{children}</WebsocketProvider>
+              </MessagesProvider>
             </ConversationsProvider>
           </OnlineUsersProvider>
         </NotificationProvider>

@@ -10,23 +10,19 @@ import React, {
 import { toast } from "sonner";
 import { useConversations } from "./ConversationsContext";
 import { useSession } from "next-auth/react";
-import { v4 as uuid } from "uuid";
 import { useNotification } from "./NotificationContext";
 import { useRouter } from "next/navigation";
 import { getCookie } from "cookies-next";
-import { useOnlineUsers } from "./OnlineUsersContext";
 
 type MessagesContextType = {
   messages: Message[];
   waitingMessages: WaitingMessage[];
   loading: boolean;
-  send: (data: string) => void;
   loadMore: (page: number) => Promise<void>;
   onDelete: (deletedMessageId: string) => void;
+  onReceiveMessage: (payload: WSResponse) => void;
+  appendWaitingMessage: (payload: WSRequest) => void;
 };
-
-const MAX_RECONNECTS = 5;
-const RECONNECT_DELAY = 3000;
 
 const MessagesContext = createContext<MessagesContextType | undefined>(
   undefined
@@ -40,13 +36,10 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const ConversationsCtx = useConversations();
   const notificationsCtx = useNotification();
-  const onlineCtx = useOnlineUsers();
   const conversationId = ConversationsCtx.currentConversation?._id;
   const currentConversationIdRef = useRef<string>(
     ConversationsCtx.currentConversation?._id
   );
-  const socketRef = useRef<WebSocket | null>(null);
-  const reconnectRef = useRef<number>(0);
 
   useEffect(() => {
     currentConversationIdRef.current = conversationId;
@@ -86,7 +79,7 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const onReceive = (payload: WSResponse) => {
+  const onReceiveMessage = (payload: WSResponse) => {
     if (payload.type === "acknowledged") {
       setWaitingMessages((prev) =>
         prev.filter((msg) => msg.requestId !== payload.id)
@@ -108,107 +101,10 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
     ConversationsCtx.updateLastMessage(payload.message as Message);
   };
 
-  const connect = () => {
-    if (!session.data) {
-      return;
-    }
-
-    const ws = new WebSocket(
-      `${process.env.WS_URL}/ws?token=${getCookie("next-auth.session-token")}`
-    );
-    socketRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("✅ WebSocket connected");
-      reconnectRef.current = 0;
-    };
-
-    ws.onclose = () => {
-      if (reconnectRef.current < MAX_RECONNECTS) {
-        reconnectRef.current++;
-        toast.warning(
-          `Connection has been lost.\nReconnect #${reconnectRef.current} in ${
-            RECONNECT_DELAY / 1000
-          }s`,
-          { duration: RECONNECT_DELAY }
-        );
-        setTimeout(connect, RECONNECT_DELAY);
-      } else {
-        toast.error(
-          "Max reconnect attempts reached. Check your internet connection and reload the page.",
-          { duration: 1000 * 60 }
-        );
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.error("❌ WebSocket error:", err);
-      ws.close();
-    };
-
-    ws.onmessage = (e: MessageEvent) => {
-      const data = JSON.parse(e.data) as WSResponse;
-      switch (data.type) {
-        case "err":
-          toast.error(data.message as string);
-          break;
-        case "msg":
-          onReceive(data);
-          break;
-        case "acknowledged":
-          onReceive(data);
-          break;
-        case "delete":
-          onDelete(data.messageId!);
-          break;
-        case "cnv":
-          ConversationsCtx.appendConversation({
-            _id: data.cnvId!,
-            participant: data.user!,
-          });
-          break;
-        case "status":
-          if (data.online) {
-            onlineCtx.addOnline(data.userId!);
-          } else {
-            onlineCtx.removeOnline(data.userId!);
-          }
-          break;
-      }
-    };
-  };
-
   useEffect(() => {
     if (!session.data || ConversationsCtx.loading) return;
     fetchData();
   }, [conversationId]);
-
-  useEffect(() => {
-    if (!session.data || ConversationsCtx.loading) return;
-    if (
-      socketRef.current &&
-      (socketRef.current?.readyState === WebSocket.OPEN ||
-        socketRef.current?.readyState === WebSocket.CONNECTING)
-    )
-      return;
-
-    connect();
-  }, [conversationId, session.data, ConversationsCtx.loading]);
-
-  const send = (message: string) => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      const payload: WSRequest = {
-        id: uuid(),
-        conversationId: conversationId as string,
-        message,
-        type: "msg",
-      };
-      socketRef.current.send(JSON.stringify(payload));
-      appendWaitingMessage(payload);
-    } else {
-      console.warn("Tried to send on closed WebSocket");
-    }
-  };
 
   function appendWaitingMessage(payload: WSRequest) {
     setWaitingMessages((prev) => [
@@ -261,9 +157,10 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
         messages,
         waitingMessages,
         loading,
-        send,
         loadMore,
         onDelete,
+        onReceiveMessage,
+        appendWaitingMessage,
       }}
     >
       {children}

@@ -14,7 +14,7 @@ const nextConfig: NextConfig =
           AWS: "https://atheer-web-projects.s3.eu-central-1.amazonaws.com/",
           BACKEND_URL: "http://localhost:8080",
           WS_URL: "ws://localhost:8080",
-          NEXTAUTH_SECRET: "N9rW6PeFVMGUgRIkxMXH7B5YChatify-Deployed",
+          // NEXTAUTH_SECRET: "",
         },
       };
 

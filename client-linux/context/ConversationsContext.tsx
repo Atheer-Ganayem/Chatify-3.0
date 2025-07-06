@@ -1,11 +1,11 @@
 "use client";
 
-import { getCookie } from "cookies-next";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useOnlineUsers } from "./OnlineUsersContext";
+import useFetch from "@/hooks/useFetch";
 
 type ConversationContextType = {
   conversations: Conversation[];
@@ -23,24 +23,25 @@ const ConversationsContext = createContext<ConversationContextType | undefined>(
 const ConversationsProvider = ({ children }: { children: React.ReactNode }) => {
   const session = useSession();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
   const params = useSearchParams();
   const onlineCtx = useOnlineUsers();
   const conversationID = params.get("conversationID");
   const currentConversation =
     conversations.find((cnv) => cnv._id === conversationID) || null;
+  const { isLoading: loading, exec } = useFetch({
+    path: "/conversations",
+    auth: true,
+    defaultLoadong: true,
+  });
 
   const fetchData = async () => {
+    console.log("fetch data");
+
     try {
-      setLoading(true);
-      const response = await fetch(`${process.env.BACKEND_URL}/conversations`, {
-        credentials: "include",
-        headers: {
-          Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
-        },
-      });
-      const responseData = await response.json();
-      if (response.ok) {
+      const { ok, responseData, error } = await exec();
+
+      if (error) throw error;
+      if (ok) {
         setConversations(responseData.conversations || []);
         onlineCtx.addOnline(...(responseData.online || []));
       } else {
@@ -48,8 +49,6 @@ const ConversationsProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (err) {
       console.log(err);
-    } finally {
-      setLoading(false);
     }
   };
 

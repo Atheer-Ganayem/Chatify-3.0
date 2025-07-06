@@ -1,13 +1,12 @@
 import { useConversations } from "@/context/ConversationsContext";
-import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
 import { Button } from "../../ui/button";
 import { Loader2Icon, Mail } from "lucide-react";
 import { redirect, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { createConversation } from "@/utils/requests";
 import { toast } from "sonner";
 import { useOnlineUsers } from "@/context/OnlineUsersContext";
+import useFetch from "@/hooks/useFetch";
 
 interface Props {
   user: Participant;
@@ -17,9 +16,13 @@ interface Props {
 const AddConversationResults: React.FC<Props> = ({ user, onClose }) => {
   const ctx = useConversations();
   const { data } = useSession();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const router = useRouter();
   const onlineCtx = useOnlineUsers();
+  const { exec, isLoading } = useFetch({
+    path: "/conversation",
+    method: "POST",
+    auth: true,
+  });
 
   async function onClickHandler() {
     ctx?.conversations?.forEach((cnv) => {
@@ -29,27 +32,25 @@ const AddConversationResults: React.FC<Props> = ({ user, onClose }) => {
       }
     });
     try {
-      setIsLoading(true);
+      const { ok, responseData, error } = await exec();
+      if (error) throw error;
 
-      const response = await createConversation(user._id);
-      if (!response.ok) {
-        toast.error(response.message);
+      if (ok) {
+        toast.error(responseData.message);
       }
 
       ctx.appendConversation({
-        _id: response.conversationID,
+        _id: responseData.conversationID,
         participant: user,
       });
-      if (response.isOnline) {
+      if (responseData.isOnline) {
         onlineCtx.addOnline(user._id);
       }
       onClose();
-      router.push(`/?conversationID=${response.conversationID}`);
+      router.push(`/?conversationID=${responseData.conversationID}`);
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong, please try again later.");
-    } finally {
-      setIsLoading(false);
     }
   }
 

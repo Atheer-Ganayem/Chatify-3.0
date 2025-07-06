@@ -13,13 +13,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Mail, Lock, User } from "lucide-react";
 import AvatarInput from "./AvatarInput";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
+import useFetch from "@/hooks/useFetch";
 
 const formSchema = z
   .object({
@@ -46,7 +46,11 @@ const formSchema = z
   });
 
 export default function SignupForm() {
-  const [loading, setLoading] = useState(false);
+  const { exec, isLoading } = useFetch({
+    method: "POST",
+    path: "/register",
+    auth: false,
+  });
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -60,7 +64,6 @@ export default function SignupForm() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setLoading(true);
     try {
       const formData = new FormData();
       formData.append("name", values.name);
@@ -68,13 +71,10 @@ export default function SignupForm() {
       formData.append("password", values.password);
       formData.append("avatar", (values.avatar as Array<File>)[0] as File);
 
-      const response = await fetch(`${process.env.BACKEND_URL}/register`, {
-        method: "POST",
-        body: formData,
-      });
-      const responseData = await response.json();
-      console.log(response, responseData);
-      if (response.ok) {
+      const { ok, responseData, error } = await exec(formData);
+      if (error) throw error;
+
+      if (ok) {
         await signIn("credentials", {
           redirect: true,
           callbackUrl: "/",
@@ -87,8 +87,6 @@ export default function SignupForm() {
     } catch (err) {
       console.log(err);
       toast.error("Coudln't sign you up, please try again later.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -192,10 +190,10 @@ export default function SignupForm() {
           </p>
           <Button
             type="submit"
-            className={cn("w-full", loading && "opacity-50")}
-            disabled={loading}
+            className={cn("w-full", isLoading && "opacity-50")}
+            disabled={isLoading}
           >
-            {loading ? "Registering..." : "Register"}
+            {isLoading ? "Registering..." : "Register"}
           </Button>
         </div>
       </form>

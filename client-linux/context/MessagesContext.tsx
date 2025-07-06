@@ -12,7 +12,7 @@ import { useConversations } from "./ConversationsContext";
 import { useSession } from "next-auth/react";
 import { useNotification } from "./NotificationContext";
 import { useRouter } from "next/navigation";
-import { getCookie } from "cookies-next";
+import useFetch from "@/hooks/useFetch";
 
 type MessagesContextType = {
   messages: Message[];
@@ -33,13 +33,16 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [waitingMessages, setWaitingMessages] = useState<WaitingMessage[]>([]);
-  const [loading, setLoading] = useState(true);
   const ConversationsCtx = useConversations();
   const notificationsCtx = useNotification();
   const conversationId = ConversationsCtx.currentConversation?._id;
   const currentConversationIdRef = useRef<string>(
     ConversationsCtx.currentConversation?._id
   );
+  const { isLoading, exec } = useFetch({
+    path: `/messages/${conversationId}`,
+    auth: true,
+  });
 
   useEffect(() => {
     currentConversationIdRef.current = conversationId;
@@ -48,24 +51,15 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchData = async () => {
     if (!conversationId) {
       setMessages([]);
-      setLoading(false);
       return;
     }
 
     try {
       setMessages([]);
-      setLoading(true);
-      const response = await fetch(
-        `${process.env.BACKEND_URL}/messages/${conversationId}`,
-        {
-          credentials: "include",
-          headers: {
-            Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
-          },
-        }
-      );
-      const responseData = await response.json();
-      if (response.ok) {
+      const { ok, responseData, error } = await exec();
+
+      if (error) throw error;
+      if (ok) {
         setMessages((responseData.messages as []).reverse() || []);
       } else {
         toast.error(responseData.message);
@@ -74,8 +68,6 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err) {
       console.log(err);
       setMessages([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -156,7 +148,7 @@ const MessagesProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         messages,
         waitingMessages,
-        loading,
+        loading: isLoading,
         loadMore,
         onDelete,
         onReceiveMessage,

@@ -3,12 +3,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Loader2 } from "lucide-react";
 import * as z from "zod";
 import { Form } from "@/components/ui/form";
-import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import AvatarInput from "@/components/auth/AvatarInput";
-import { getCookie } from "cookies-next";
+import useFetch from "@/hooks/useFetch";
 
 const formSchema = z.object({
   avatar: z.any().refine((val) => {
@@ -22,7 +21,11 @@ const formSchema = z.object({
 
 const ChangeAvatarSection = () => {
   const { data, update } = useSession();
-  const [loading, setLoading] = useState<boolean>(false);
+  const { isLoading, exec } = useFetch({
+    path: "/user/avatar",
+    method: "PUT",
+    auth: true,
+  });
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -31,20 +34,13 @@ const ChangeAvatarSection = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setLoading(true);
     try {
       const formData = new FormData();
       formData.append("file", values.avatar[0]);
-      const response = await fetch(`${process.env.BACKEND_URL}/user/avatar`, {
-        method: "PUT",
-        body: formData,
-        credentials: "include",
-        headers: {
-          Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
-        },
-      });
-      const responseData = await response.json();
-      if (response.ok) {
+
+      const { ok, responseData, error } = await exec(formData);
+      if (error) throw error;
+      if (ok) {
         toast.success(responseData.message);
         await update({ avatar: responseData.avatar });
         form.reset();
@@ -54,8 +50,6 @@ const ChangeAvatarSection = () => {
     } catch (err) {
       console.log(err);
       toast.error("Coudln't change your avatar, please try again later.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -71,7 +65,7 @@ const ChangeAvatarSection = () => {
           current={`${process.env.AWS}${data?.user.avatar}`}
         />
         <div className="absolute rounded-full top-0 right-0 flex">
-          {loading ? (
+          {isLoading ? (
             <Button type="button" disabled className="rounded-full" size="sm">
               <Loader2 className="animate-spin" />
             </Button>

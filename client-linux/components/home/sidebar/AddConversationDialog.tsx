@@ -15,6 +15,7 @@ import { Ban, Plus, Search } from "lucide-react";
 import { useRef, useState } from "react";
 import AddConversationResults from "./AddConversationResults";
 import { toast } from "sonner";
+import useFetch from "@/hooks/useFetch";
 
 type CloseBtnType = HTMLButtonElement | null;
 
@@ -22,7 +23,10 @@ export default function AddConversationDialog() {
   const closeBtnRef = useRef<CloseBtnType>(null);
   const [term, setTerm] = useState<string>("");
   const [currentSearch, setCurrentSearch] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const { isLoading, exec } = useFetch({
+    path: `/users?search=${term}`,
+    auth: true,
+  });
   const [result, setResult] = useState<Participant[]>([]);
 
   async function onSubmitHandler(e: React.FormEvent) {
@@ -31,15 +35,9 @@ export default function AddConversationDialog() {
       return;
     }
     try {
-      setLoading(true);
-      const response = await fetch(
-        `${process.env.BACKEND_URL}/users?search=${term}`,
-        {
-          credentials: "include",
-        }
-      );
-      const responseData = await response.json();
-      if (!response.ok) {
+      const { ok, responseData, error } = await exec();
+      if (error) throw error;
+      else if (!ok) {
         toast.error(responseData.message);
         return;
       }
@@ -49,8 +47,6 @@ export default function AddConversationDialog() {
     } catch (error) {
       toast.error("Something wen wrong, please try again later.");
       console.log(error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -81,7 +77,7 @@ export default function AddConversationDialog() {
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}
               />
-              <Button disabled={!term || loading} type="submit">
+              <Button disabled={!term || isLoading} type="submit">
                 <Search />
               </Button>
             </div>

@@ -11,10 +11,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { getCookie } from "cookies-next";
+import useFetch from "@/hooks/useFetch";
 
 const formSchema = z
   .object({
@@ -28,7 +27,11 @@ const formSchema = z
   });
 
 const ChangePasswordSection = () => {
-  const [loading, setLoading] = useState<boolean>(false);
+  const { exec, isLoading } = useFetch({
+    path: "/user/password",
+    method: "PUT",
+    auth: true,
+  });
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -40,22 +43,16 @@ const ChangePasswordSection = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setLoading(true);
     try {
-      const response = await fetch(`${process.env.BACKEND_URL}/user/password`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
-        },
-        body: JSON.stringify({
+      const { ok, responseData, error } = await exec(
+        JSON.stringify({
           currentPassword: values.currentPassword,
           newPassword: values.newPassword,
-        }),
-        credentials: "include",
-      });
-      const responseData = await response.json();
-      if (response.ok) {
+        })
+      );
+
+      if (error) throw error;
+      if (ok) {
         toast.success(responseData.message);
         form.reset();
       } else {
@@ -64,8 +61,6 @@ const ChangePasswordSection = () => {
     } catch (err) {
       console.log(err);
       toast.error("Coudln't change your password, please try again later.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -137,8 +132,8 @@ const ChangePasswordSection = () => {
             </FormItem>
           )}
         />
-        <Button disabled={loading}>
-          {loading ? (
+        <Button disabled={isLoading}>
+          {isLoading ? (
             <>
               <Loader2 className="animate-spin" /> Changing Password...
             </>

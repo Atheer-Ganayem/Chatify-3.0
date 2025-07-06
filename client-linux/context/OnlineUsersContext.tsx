@@ -15,7 +15,6 @@ const OnlineUsersContext = createContext<OnlineUsersContextType | undefined>(
 
 const OnlineUsersProvider = ({ children }: { children: React.ReactNode }) => {
   const [online, setOnline] = useState<string[]>([]);
-  console.log(online);
 
   function addOnline(...ids: string[]) {
     setOnline((prev) => {

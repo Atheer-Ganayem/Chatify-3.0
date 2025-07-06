@@ -51,6 +51,7 @@ const ChatInput = () => {
           className="absolute bottom-2 right-2"
           type="submit"
           ref={btnRef}
+          disabled={!input.trim()}
         >
           <Send className="h-4 w-4" />
         </Button>

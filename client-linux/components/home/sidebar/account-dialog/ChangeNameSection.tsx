@@ -15,7 +15,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { getCookie } from "cookies-next";
+import useFetch from "@/hooks/useFetch";
 
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -23,7 +23,11 @@ const formSchema = z.object({
 
 const ChangeNameSection = () => {
   const { data, update } = useSession();
-  const [loading, setLoading] = useState<boolean>(false);
+  const { isLoading, exec } = useFetch({
+    path: "/user/name",
+    method: "PUT",
+    auth: true,
+  });
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const form = useForm({
@@ -34,19 +38,11 @@ const ChangeNameSection = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setLoading(true);
     try {
-      const response = await fetch(`${process.env.BACKEND_URL}/user/name`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
-        },
-        body: JSON.stringify({ name: values.name }),
-        credentials: "include",
-      });
-      const responseData = await response.json();
-      if (response.ok) {
+      const { ok, responseData, error } = await exec();
+      if (error) throw error;
+
+      if (ok) {
         toast.success(responseData.message);
         await update({ name: values.name });
         setIsEditing(false);
@@ -56,8 +52,6 @@ const ChangeNameSection = () => {
     } catch (err) {
       console.log(err);
       toast.error("Coudln't change your username, please try again later.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -74,7 +68,7 @@ const ChangeNameSection = () => {
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    disabled={!isEditing || loading}
+                    disabled={!isEditing || isLoading}
                     placeholder="John Doe"
                     className="pl-10"
                     {...field}
@@ -83,7 +77,7 @@ const ChangeNameSection = () => {
               </FormControl>
               <FormMessage />
               <div className="absolute rounded-full top-0 right-0 flex">
-                {loading ? (
+                {isLoading ? (
                   <Button
                     type="button"
                     disabled

@@ -11,9 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ClipboardCopy, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
 import { useMessages } from "@/context/MessagesContext";
-import { getCookie } from "cookies-next";
+import useFetch from "@/hooks/useFetch";
 
 interface Props {
   message: Message;
@@ -23,7 +22,11 @@ const MessageCard: React.FC<Props> = ({ message }) => {
   const session = useSession();
   const conversationCtx = useConversations();
   const msgCtx = useMessages();
-  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const { isLoading, exec } = useFetch({
+    method: "DELETE",
+    path: `/message/${message._id}`,
+    auth: true,
+  });
 
   if (!session || !session.data) {
     return;
@@ -46,19 +49,9 @@ const MessageCard: React.FC<Props> = ({ message }) => {
 
   async function deleteHandler() {
     try {
-      setIsDeleting(true);
-      const response = await fetch(
-        `${process.env.BACKEND_URL}/message/${message._id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${getCookie("next-auth.session-token")}`,
-          },
-          credentials: "include",
-        }
-      );
-      const responseData = await response.json();
-      if (!response.ok) {
+      const { ok, responseData, error } = await exec();
+      if (error) throw error;
+      else if (!ok) {
         toast.error(responseData.message);
       }
       toast.success("Message deleted successfully.");
@@ -66,8 +59,6 @@ const MessageCard: React.FC<Props> = ({ message }) => {
     } catch (error) {
       console.log(error);
       toast.error("Coudln't delete message, please try again later.");
-    } finally {
-      setIsDeleting(false);
     }
   }
 
@@ -91,9 +82,9 @@ const MessageCard: React.FC<Props> = ({ message }) => {
       </Avatar>
 
       <Card
-        className={`flex-1 shadow-sm my-2 ${
+        className={`flex-1 shadow-sm my-2 py-4 ${
           message.sender === session.data.user.id &&
-          (isDeleting ? "bg-red-800 opacity-60" : "bg-primary")
+          (isLoading ? "bg-red-800 opacity-60" : "bg-primary")
         }`}
       >
         <CardHeader>
@@ -113,11 +104,11 @@ const MessageCard: React.FC<Props> = ({ message }) => {
                   </DropdownMenuItem>
                   {message.sender === session.data.user.id && (
                     <DropdownMenuItem
-                      disabled={isDeleting}
+                      disabled={isLoading}
                       variant="destructive"
                       onClick={deleteHandler}
                     >
-                      {isDeleting ? (
+                      {isLoading ? (
                         <>
                           <Loader2 className="animate-spin" /> Deleting...
                         </>

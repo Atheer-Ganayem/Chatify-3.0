@@ -32,7 +32,9 @@ const AddConversationResults: React.FC<Props> = ({ user, onClose }) => {
       }
     });
     try {
-      const { ok, responseData, error } = await exec();
+      const { ok, responseData, error } = await exec(
+        JSON.stringify({ targetUserID: user._id })
+      );
       if (error) throw error;
 
       if (ok) {
@@ -70,7 +72,10 @@ const AddConversationResults: React.FC<Props> = ({ user, onClose }) => {
         <Button
           onClick={onClickHandler}
           type="button"
-          disabled={user._id == data?.user.id}
+          disabled={
+            user._id == data?.user.id ||
+            !!ctx.conversations.find((c) => c.participant._id === user._id)
+          }
         >
           <Mail />
         </Button>

@@ -57,7 +57,7 @@ func compressImage(file multipart.File) ([]byte, error) {
 		Quality:  75,
 	})
 	if err != nil {
-		return nil, errors.New("Failed to decode the image.")
+		return nil, errors.New("Failed to encode the image.")
 	}
 
 	return buf.Bytes(), nil

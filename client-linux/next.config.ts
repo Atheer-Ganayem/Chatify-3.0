@@ -8,13 +8,33 @@ const nextConfig: NextConfig =
           WS_URL: "wss://chatifiy-3.fly.dev",
           AWS: "https://atheer-web-projects.s3.eu-central-1.amazonaws.com/",
         },
+        images: {
+          remotePatterns: [
+            {
+              protocol: "https",
+              hostname: "atheer-web-projects.s3.eu-central-1.amazonaws.com",
+              port: "",
+              pathname: "/**",
+            },
+          ],
+        },
       }
     : {
         env: {
           AWS: "https://atheer-web-projects.s3.eu-central-1.amazonaws.com/",
           BACKEND_URL: "http://localhost:8080",
           WS_URL: "ws://localhost:8080",
-          NEXTAUTH_SECRET: "",
+          // NEXTAUTH_SECRET: "",
+        },
+        images: {
+          remotePatterns: [
+            {
+              protocol: "https",
+              hostname: "atheer-web-projects.s3.eu-central-1.amazonaws.com",
+              port: "",
+              pathname: "/**",
+            },
+          ],
         },
       };
 

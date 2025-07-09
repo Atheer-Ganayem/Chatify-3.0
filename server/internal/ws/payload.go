@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/models"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/utils"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -16,6 +16,7 @@ type WSPayload struct {
 	Type           string `json:"type"`
 	ConversationID string `json:"conversationId"`
 	Message        string `json:"message"`
+	Image          string `json:"image"` // this is the value of the image path that the client received when they uploaded the image
 }
 
 func (payload *WSPayload) ProccessMessage(userID, conversationID bson.ObjectID) (models.Message, bson.ObjectID, error) {
@@ -25,6 +26,9 @@ func (payload *WSPayload) ProccessMessage(userID, conversationID bson.ObjectID) 
 	}
 
 	message := models.Message{ID: bson.NewObjectID(), Sender: userID, ConversationID: conversationID, Text: payload.Message, CreatedAt: time.Now()}
+	if payload.Image != "" {
+		message.Image = payload.Image
+	}
 
 	err = message.Save()
 	if err != nil {

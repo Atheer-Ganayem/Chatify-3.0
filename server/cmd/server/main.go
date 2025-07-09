@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	_ "crypto/tls"
 	"fmt"
 	"log"
@@ -8,10 +9,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/db"
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/middlewares"
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/routes"
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
+	routes "github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/api"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/db"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/middlewares"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/redis"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/utils"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -27,6 +29,12 @@ func main() {
 	utils.InitAWS()
 	db.Init()
 	defer db.Disconnect()
+	redis.Init()
+	defer redis.Client.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go redis.StartSubscriber(ctx)
 
 	server := gin.Default()
 	limiter := utils.NewClientLimiter(rate.Every(750*time.Millisecond), 5)
@@ -48,4 +56,5 @@ func main() {
 		port = fmt.Sprintf(":%s", port)
 	}
 	server.Run(port)
+
 }

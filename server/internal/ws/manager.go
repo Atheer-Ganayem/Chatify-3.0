@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/v2/bson"

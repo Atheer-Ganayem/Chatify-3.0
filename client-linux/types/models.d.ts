@@ -16,12 +16,14 @@ type Message = {
   sender: string;
   conversationId: string;
   text: string;
+  image?: string;
   createdAt: Date;
 };
 
 type WaitingMessage = {
   requestId: string;
   text: string;
+  image?: string;
   conversationID: string;
   createdAt: Date;
 };
@@ -30,6 +32,7 @@ type WSRequest = {
   type: "msg";
   id: string;
   message: string;
+  image?: string;
   conversationId: string;
 };
 

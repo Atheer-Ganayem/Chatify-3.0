@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/db"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/db"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"

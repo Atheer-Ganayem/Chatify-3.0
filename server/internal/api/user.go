@@ -1,12 +1,12 @@
-package routes
+package api
 
 import (
 	"log"
 	"net/http"
 	"strings"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/models"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
@@ -67,8 +67,6 @@ func login(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid email or password."})
 		return
 	}
-
-	// MAYBE GENERATE A JWT TOKEN
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged in successfully.", "user": gin.H{
 		"id":     user.ID,

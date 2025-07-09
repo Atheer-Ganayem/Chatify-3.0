@@ -1,9 +1,7 @@
-package routes
+package api
 
 import (
-	"net/http"
-
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/middlewares"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/middlewares"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +31,9 @@ func Register(server *gin.Engine) {
 		authRoutes.GET("/ws", connectWS)
 	}
 
-	authRoutes.GET("/ping", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{"message": "pong!", "Id": ctx.GetString("userID")})
-	})
+	authRoutes.POST("/upload", uplaodHandler)
+
+	// authRoutes.GET("/ping", func(ctx *gin.Context) {
+	// 	ctx.JSON(http.StatusOK, gin.H{"message": "pong!", "Id": ctx.GetString("userID")})
+	// })
 }

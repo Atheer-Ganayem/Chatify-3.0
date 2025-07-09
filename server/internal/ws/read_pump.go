@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/redis"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -39,12 +40,25 @@ func ReadPump(webSocketManager *WebSocketManager, sc *SafeConn, userID bson.Obje
 			continue
 		}
 
+		// check if user sent an image, if yes, validate its existience and owner in redis
+		if payload.Image != "" {
+			path, err := redis.GetTempImage(userID)
+			if err != nil {
+				sc.WriteJSON(gin.H{"type": "err", "message": "Couldn't send image."})
+				continue
+			} else if path != payload.Image {
+				sc.WriteJSON(gin.H{"type": "err", "message": "Couldn't send image."})
+				continue
+			}
+		}
+
 		// saving & sending messages to other participant and ACK to client
 		message, receiverID, err := payload.ProccessMessage(userID, conversationID)
 		if err != nil {
 			sc.WriteJSON(gin.H{"type": "err", "message": "Couldn't send message."})
 			continue
 		}
+		go redis.DeleteKeys(userID) // cleanup redies after successfull message saving
 		receiverConn := webSocketManager.GetConn(receiverID)
 		if receiverConn != nil {
 			if err := receiverConn.WriteJSON(gin.H{"type": "msg", "message": message}); err != nil {

@@ -10,7 +10,7 @@ import { useConversations } from "./ConversationsContext";
 import { v4 as uuid } from "uuid";
 
 type WebsocketContextType = {
-  sendMessage: (message: string) => void;
+  sendMessage: (message: string, image?: string) => void;
 };
 
 const MAX_RECONNECTS = 5;
@@ -119,7 +119,7 @@ export default function WebsocketProvider({
     connect();
   }, [conversationId, session.data, ConversationsCtx.loading]);
 
-  const sendMessage = (message: string) => {
+  const sendMessage = (message: string, image?: string) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       const payload: WSRequest = {
         id: uuid(),
@@ -127,6 +127,7 @@ export default function WebsocketProvider({
         message,
         type: "msg",
       };
+      if (image) payload.image = image;
       socketRef.current.send(JSON.stringify(payload));
       appendWaitingMessage(payload);
     } else {

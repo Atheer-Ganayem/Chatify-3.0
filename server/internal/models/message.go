@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/db"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/db"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -17,6 +17,7 @@ type Message struct {
 	Sender         bson.ObjectID `json:"sender" bson:"sender"`
 	ConversationID bson.ObjectID `json:"conversationId" bson:"conversationId"`
 	Text           string        `json:"text" bson:"text"`
+	Image          string        `json:"image,omitempty" bson:"image"`
 	CreatedAt      time.Time     `json:"createdAt" bson:"createdAt"`
 }
 

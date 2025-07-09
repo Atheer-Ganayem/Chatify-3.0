@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/v2/bson"

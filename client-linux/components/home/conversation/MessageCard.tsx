@@ -13,6 +13,7 @@ import { ClipboardCopy, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useMessages } from "@/context/MessagesContext";
 import useFetch from "@/hooks/useFetch";
+import Image from "next/image";
 
 interface Props {
   message: Message;
@@ -125,6 +126,23 @@ const MessageCard: React.FC<Props> = ({ message }) => {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
+          {message.image && (
+            <div className="w-full max-w-full flex justify-center">
+              <Image
+                alt="img"
+                src={`${process.env.AWS}${message.image}`}
+                width={800}
+                height={0}
+                style={{
+                  width: "auto",
+                  height: "auto",
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                }}
+              />
+            </div>
+          )}
+
           <p className="text-md leading-relaxed">{message.text}</p>
         </CardContent>
       </Card>

@@ -1,12 +1,12 @@
-package routes
+package api
 
 import (
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/models"
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/utils"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/models"
+	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -74,6 +74,7 @@ func deleteMessage(ctx *gin.Context) {
 	}
 
 	err = message.Delete()
+	go utils.DeleteFile(message.Image)
 
 	if err == mongo.ErrNoDocuments {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "Message not found (2)."})

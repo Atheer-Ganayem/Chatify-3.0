@@ -74,15 +74,25 @@ func (wm *WebSocketManager) FilterOnlineUsers(IDs []bson.ObjectID) []bson.Object
 
 // Notifies all online users (from the given slice) about the online/offline status of a specific user.
 func (wm *WebSocketManager) NotifyStatus(IDs []bson.ObjectID, userID bson.ObjectID, status bool) {
-	onlineUsersIDs := wm.FilterOnlineUsers(IDs)
-	for _, id := range onlineUsersIDs {
-		go func(id bson.ObjectID) {
-			conn := wm.GetConn(id)
-			if conn != nil {
-				if err := conn.WriteJSON(gin.H{"type": "status", "userId": userID, "online": status}); err != nil {
-					log.Printf("Coudn't notify user %s of online event: %v", id, err)
+	workers := 2
+	ch := make(chan bson.ObjectID)
+
+	for range workers {
+		go func() {
+			for id := range ch {
+				conn := wm.GetConn(id)
+				if conn != nil {
+					if err := conn.WriteJSON(gin.H{"type": "status", "userId": userID, "online": status}); err != nil {
+						log.Printf("Coudn't notify user %s of online event: %v", id, err)
+					}
 				}
 			}
-		}(id)
+		}()
 	}
+
+	onlineUsersIDs := wm.FilterOnlineUsers(IDs)
+	for _, id := range onlineUsersIDs {
+		ch <- id
+	}
+	close(ch)
 }

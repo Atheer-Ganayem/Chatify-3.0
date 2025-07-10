@@ -30,7 +30,6 @@ func ReadPump(webSocketManager *WebSocketManager, sc *SafeConn, userID bson.Obje
 		sc.Conn.SetReadDeadline(time.Now().Add(pongWait))
 		err = sc.Conn.ReadJSON(&payload)
 		if err != nil {
-			log.Printf("Read error from %s: %v", userID.Hex(), err)
 			break
 		}
 

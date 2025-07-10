@@ -31,3 +31,21 @@ func uplaodHandler(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Image uploaded successfully.", "path": path})
 }
+
+func deleteHandler(ctx *gin.Context) {
+	userID, err := bson.ObjectIDFromHex(ctx.GetString("userID"))
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Not authenticated."})
+		return
+	}
+
+	path, err := redis.GetTempImage(userID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "Image not found."})
+		return
+	}
+
+	go utils.DeleteFile(path)
+
+	ctx.SecureJSON(http.StatusOK, gin.H{"message": "Deleting image."})
+}

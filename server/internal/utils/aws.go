@@ -33,7 +33,7 @@ func UploadFileToS3(file []byte, fileHeader *multipart.FileHeader) (string, erro
 	if bucketName == "" {
 		panic("AWS_BUCKET_NAME is a required env variable.")
 	}
-	fileName := fmt.Sprintf("chatify-3/%s%s", strings.ReplaceAll(fileHeader.Filename, " ", ""), uuid.New().String())
+	fileName := fmt.Sprintf("chatify-3/%s%s", uuid.New().String(), strings.ReplaceAll(fileHeader.Filename, " ", ""))
 
 	_, err := s3Client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket:      &bucketName,

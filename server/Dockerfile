@@ -12,7 +12,7 @@ RUN go mod download && go mod verify
 COPY . .
 
 # Build the app binary
-RUN go build -v -o /run-app .
+RUN go build -v -o /run-app cmd/server/main.go
 
 # Stage 2: Run in a minimal Debian environment with CA certs
 FROM debian:bookworm

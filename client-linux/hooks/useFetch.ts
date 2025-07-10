@@ -7,11 +7,11 @@ type Args = {
   method?: "GET" | "POST" | "DELETE" | "PUT";
   path: string;
   auth: boolean;
-  defaultLoadong?: boolean;
+  defaultLoading?: boolean;
 };
 
 export default function useFetch(options: Args) {
-  const [isLoading, setIsLoading] = useState<boolean>(!!options.defaultLoadong);
+  const [isLoading, setIsLoading] = useState<boolean>(!!options.defaultLoading);
 
   const headers: Record<string, string> = {};
   if (options.auth) {
@@ -19,8 +19,6 @@ export default function useFetch(options: Args) {
   }
 
   async function exec(body?: FormData | string) {
-    console.log("exec...");
-
     if (typeof body === "string") {
       headers["Content-Type"] = "application/json";
     }

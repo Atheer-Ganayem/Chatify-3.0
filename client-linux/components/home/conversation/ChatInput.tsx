@@ -19,7 +19,7 @@ const ChatInput = () => {
   const websocketCtx = useWebsocket();
   const btnRef = useRef<HTMLButtonElement>(null);
   const { isLoading: isUploading, exec } = useFetch({
-    path: "/upload",
+    path: "/image",
     method: "POST",
     auth: true,
   });
@@ -46,6 +46,7 @@ const ChatInput = () => {
 
   async function onSelectImage(file: File | undefined) {
     if (isUploading) return;
+    
     if (file) {
       setPreviewUrl(URL.createObjectURL(file));
     } else {
@@ -81,7 +82,11 @@ const ChatInput = () => {
   return (
     <div>
       {previewUrl && (
-        <ImagePreviewer url={previewUrl} isLoading={isUploading} />
+        <ImagePreviewer
+          url={previewUrl}
+          isLoading={isUploading}
+          reset={reset}
+        />
       )}
       <form
         className="flex justify-center w-full max-w-full"

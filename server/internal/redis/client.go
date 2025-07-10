@@ -47,7 +47,7 @@ func SetTempImage(path string, userID bson.ObjectID) error {
 	defer cancel()
 
 	err := Client.Set(ctx, ExpirePrefix+userID.Hex(), path, time.Minute*10).Err()
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		return err
 	}
 

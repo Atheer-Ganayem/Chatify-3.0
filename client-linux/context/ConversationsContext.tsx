@@ -31,7 +31,7 @@ const ConversationsProvider = ({ children }: { children: React.ReactNode }) => {
   const { isLoading: loading, exec } = useFetch({
     path: "/conversations",
     auth: true,
-    defaultLoadong: true,
+    defaultLoading: true,
   });
 
   const fetchData = async () => {

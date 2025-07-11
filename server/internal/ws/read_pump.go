@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/redis"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/redis"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )

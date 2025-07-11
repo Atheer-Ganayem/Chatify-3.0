@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/utils"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -74,7 +74,7 @@ func (wm *WebSocketManager) FilterOnlineUsers(IDs []bson.ObjectID) []bson.Object
 
 // Notifies all online users (from the given slice) about the online/offline status of a specific user.
 func (wm *WebSocketManager) NotifyStatus(IDs []bson.ObjectID, userID bson.ObjectID, status bool) {
-	workers := 2
+	const workers = 2
 	ch := make(chan bson.ObjectID)
 
 	for range workers {

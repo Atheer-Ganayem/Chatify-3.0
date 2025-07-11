@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/utils"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 

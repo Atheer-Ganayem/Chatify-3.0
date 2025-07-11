@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/utils"
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/ws"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/ws"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/v2/bson"

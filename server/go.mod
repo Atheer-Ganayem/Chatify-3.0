@@ -1,4 +1,4 @@
-module github.com/Atheer-Ganayem/Chatify-3.0-backend
+module github.com/Chatify-Chat-App-in-Go-and-Next.js/server
 
 go 1.23.0
 

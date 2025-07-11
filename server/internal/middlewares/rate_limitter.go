@@ -4,7 +4,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/Atheer-Ganayem/Chatify-3.0-backend/internal/utils"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 

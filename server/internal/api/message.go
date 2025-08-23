@@ -1,12 +1,13 @@
 package api
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/models"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/models"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -87,8 +88,8 @@ func deleteMessage(ctx *gin.Context) {
 	go conversation.UpdateLastMessage(bson.NilObjectID)
 
 	otherUserID := utils.GetOtherParticipant(userID, conversation.Participants)
-	if conn := webSocketManager.GetConn(otherUserID); conn != nil {
-		if err = conn.WriteJSON(gin.H{"type": "delete", "messageId": messageID}); err != nil {
+	if conn, ok := Manager.GetConn(otherUserID); ok && conn != nil {
+		if err = conn.SendJSON(context.Background(), gin.H{"type": "delete", "messageId": messageID}); err != nil {
 			log.Println("Coudn't send delete update via ws to other user.")
 		}
 	}

@@ -1,80 +1,94 @@
 package api
 
 import (
-	"log"
+	"context"
+	"fmt"
 	"net/http"
-	"time"
 
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/ws"
+	snapws "github.com/Atheer-Ganayem/SnapWS"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/models"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/ws"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/v2/bson"
-	"golang.org/x/time/rate"
 )
 
-var (
-	webSocketManager = ws.NewWebSocketManager(utils.NewClientLimiter(rate.Every(750*time.Millisecond), 5))
-)
+var Manager *snapws.Manager[bson.ObjectID]
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+func ManagerInit() {
+	u := snapws.NewUpgrader(&snapws.Options{MaxMessageSize: 2048,
+		ReaderMaxFragments: 5,
+	})
+
+	u.Limiter = snapws.NewRateLimiter(2, 3)
+	u.Limiter.OnRateLimitHit = func(conn *snapws.Conn) error {
+		conn.SendJSON(context.Background(), gin.H{"type": "err", "message": "Too fast."})
+		return nil
+	}
+
+	Manager = snapws.NewManager[bson.ObjectID](u)
+	Manager.OnRegister = func(conn *snapws.ManagedConn[bson.ObjectID]) {
+		ids, err := models.GetParticipantsIDs(conn.Key)
+		if err != nil {
+			// report error to client
+			conn.Close()
+			return
+		}
+		conn.MetaData.Store("participantsIDs", ws.NewParticipantIDs(ids))
+
+		for _, pID := range ids {
+			if pConn, ok := Manager.GetConn(pID); ok {
+				pConn.SendJSON(context.Background(), gin.H{"type": "status", "userId": conn.Key, "online": true})
+			}
+		}
+	}
+
+	Manager.OnUnregister = func(conn *snapws.ManagedConn[bson.ObjectID]) {
+		val, ok := conn.MetaData.Load("participantsIDs")
+		if !ok {
+			return
+		}
+
+		safeIDs, ok := val.(*ws.SafeIDs)
+		if !ok {
+			return
+		}
+
+		safeIDs.Mu.RLock()
+		defer safeIDs.Mu.RUnlock()
+
+		for _, pID := range safeIDs.IDs {
+			if pConn, ok := Manager.GetConn(pID); ok {
+				pConn.SendJSON(context.Background(), gin.H{"type": "status", "userId": conn.Key, "online": false})
+			}
+		}
+	}
 }
 
-const (
-	pongWait   = 60 * time.Second
-	pingPeriod = 50 * time.Second
-)
-
 func connectWS(ctx *gin.Context) {
-	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	userID, err := bson.ObjectIDFromHex(ctx.GetString("userID"))
 	if err != nil {
-		log.Printf("WebSocket upgrade failed: %v", err)
+		fmt.Println("object id err")
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "Not authenticated."})
+		return
+	}
+
+	conn, err := Manager.Connect(userID, ctx.Writer, ctx.Request)
+	if err != nil {
+		fmt.Println("connect error", err)
 		return
 	}
 	defer conn.Close()
 
-	userID, err := bson.ObjectIDFromHex(ctx.GetString("userID"))
-	if err != nil {
-		log.Printf("Invalid userID: %v", err)
-		return
-	}
-
-	sc := webSocketManager.ConnectUser(userID, conn)
-	defer webSocketManager.DisconnectUser(userID)
-
-	// conn.SetReadLimit(1024)
-	conn.SetReadDeadline(time.Now().Add(pongWait))
-	conn.SetPongHandler(func(appData string) error {
-		conn.SetReadDeadline(time.Now().Add(pongWait))
-		return nil
-	})
-
-	ticker := time.NewTicker(pingPeriod)
-	defer ticker.Stop()
-	go ping(ticker, sc, userID)
-
-	// notifing online and cashing user's "friends"
-	err = sc.LoadParticipantsIDs(userID)
-	if err != nil {
-		log.Println(err.Error())
-		sc.WriteJSON(gin.H{"type": "err", "message": "Couldn't load your conversations status. Try again later."})
-		return
-	}
-	go webSocketManager.NotifyStatus(sc.ParticipantsIDsCopy(), userID, true)
-
-	ws.ReadPump(webSocketManager, sc, userID)
+	ws.ReadPump(Manager, conn, userID)
 }
 
-func ping(ticker *time.Ticker, sc *ws.SafeConn, userID bson.ObjectID) {
-	for range ticker.C {
-		if err := sc.Ping(); err != nil {
-			log.Printf("Ping failed to %s: %v", userID.Hex(), err)
-			webSocketManager.DisconnectUser(userID)
-			sc.Conn.Close()
-			return
+func FilterOnlineUsers(ids []bson.ObjectID) []bson.ObjectID {
+	online := make([]bson.ObjectID, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := Manager.GetConn(id); ok {
+			online = append(online, id)
 		}
 	}
+
+	return online
 }

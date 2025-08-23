@@ -9,11 +9,11 @@ import (
 	"os"
 	"time"
 
-	routes "github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/api"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/db"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/middlewares"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/redis"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
+	routes "github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/api"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/db"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/middlewares"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/redis"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/utils"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -40,6 +40,8 @@ func main() {
 	limiter := utils.NewClientLimiter(rate.Every(750*time.Millisecond), 5)
 	server.Use(middlewares.RateLimitMiddleware(limiter))
 
+	routes.ManagerInit()
+
 	server.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{os.Getenv("FRONTEND_URL"), "http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
@@ -55,6 +57,6 @@ func main() {
 	} else {
 		port = fmt.Sprintf(":%s", port)
 	}
-	server.Run(port)
 
+	server.Run(port)
 }

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/db"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/db"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"

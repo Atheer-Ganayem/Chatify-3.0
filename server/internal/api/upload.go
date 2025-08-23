@@ -1,10 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/redis"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/redis"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -24,6 +25,7 @@ func uplaodHandler(ctx *gin.Context) {
 
 	err = redis.SetTempImage(path, userID)
 	if err != nil {
+		fmt.Println(err)
 		go utils.DeleteFile(path)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Couldn't upload image, please try again later."})
 		return

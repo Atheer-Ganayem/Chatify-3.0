@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/middlewares"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/middlewares"
 	"github.com/gin-gonic/gin"
 )
 

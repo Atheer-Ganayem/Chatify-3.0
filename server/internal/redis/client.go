@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/utils"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -56,7 +56,7 @@ func SetTempImage(path string, userID bson.ObjectID) error {
 		TTL: time.Minute * 12,
 	}).Result()
 
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		return err
 	}
 	if prev != "" {

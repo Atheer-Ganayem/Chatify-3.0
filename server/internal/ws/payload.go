@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/models"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/utils"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/models"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/utils"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )

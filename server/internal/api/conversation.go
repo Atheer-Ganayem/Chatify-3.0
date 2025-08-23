@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/models"
-	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server/internal/ws"
+	snapws "github.com/Atheer-Ganayem/SnapWS"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/models"
+	"github.com/Chatify-Chat-App-in-Go-and-Next.js/server-snapws/internal/ws"
 	"github.com/gin-gonic/gin"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -31,7 +33,7 @@ func getConversations(ctx *gin.Context) {
 	for i, cnv := range conversations {
 		IDs[i] = cnv.Participant.ID
 	}
-	online := webSocketManager.FilterOnlineUsers(IDs)
+	online := FilterOnlineUsers(IDs)
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Conversation fetched successfully.",
 		"conversations": conversations, "online": online})
@@ -87,13 +89,13 @@ func createConversation(ctx *gin.Context) {
 	}
 
 	// Update target user of the new conversation (if connected), and updated connected users participantsIDs slice
-	targetConn := webSocketManager.GetConn(targetID)
-	if targetConn != nil {
+	targetConn, ok := Manager.GetConn(targetID)
+	if ok && targetConn != nil {
 		go notifyUserOfConversationCreation(targetConn, clientID, insertedID)
-		targetConn.AppendParticipantID(clientID)
+		ws.AppendParticipant(targetConn, clientID)
 	}
-	if clientConn := webSocketManager.GetConn(clientID); clientConn != nil {
-		clientConn.AppendParticipantID(targetID)
+	if clientConn, ok := Manager.GetConn(clientID); ok {
+		ws.AppendParticipant(clientConn, targetID)
 	}
 
 	//response
@@ -101,19 +103,19 @@ func createConversation(ctx *gin.Context) {
 		"conversationID": insertedID, "isOnline": targetConn != nil})
 }
 
-func notifyUserOfConversationCreation(conn *ws.SafeConn, clientID, cnvID bson.ObjectID) {
+func notifyUserOfConversationCreation(conn *snapws.ManagedConn[bson.ObjectID], clientID, cnvID bson.ObjectID) {
 	opts := options.FindOne().SetProjection(bson.D{{Key: "_id", Value: 1}, {Key: "name", Value: 1}, {Key: "avatar", Value: 1}})
 	user, err := models.FindUser(bson.M{"_id": clientID}, opts)
 	if err != nil {
-		fmt.Printf("error finding user in 'notifyUserOfConversationCreation'. %w\n", err)
+		fmt.Printf("error finding user in 'notifyUserOfConversationCreation'. %s\n", err)
 		return
 	}
 	isOnline := false // if the clinet user is online not the target!!!
-	if c := webSocketManager.GetConn(clientID); c != nil {
+	if _, ok := Manager.GetConn(clientID); ok {
 		isOnline = true
 	}
 
-	if err = conn.WriteJSON(gin.H{"type": "cnv", "user": user, "cnvId": cnvID, "isOnline": isOnline}); err != nil {
+	if err = conn.SendJSON(context.Background(), gin.H{"type": "cnv", "user": user, "cnvId": cnvID, "isOnline": isOnline}); err != nil {
 		log.Println("error notifiy of conversation creation.")
 	}
 }
